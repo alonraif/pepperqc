@@ -1,0 +1,13 @@
+# Environment variables
+.env
+
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Frontend artifacts
+frontend/node_modules
+frontend/build
+
+# Docker
+uploads/

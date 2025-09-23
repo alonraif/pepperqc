@@ -1,0 +1,13 @@
+Flask
+Flask-Cors
+gunicorn
+celery
+redis
+psycopg2-binary
+Flask-SQLAlchemy
+reportlab
+opencv-python-headless
+pytesseract
+numpy
+Pillow
+requests

@@ -1,0 +1,3 @@
+[submodule "Project/QtCreator/qctools-QtAVPlayer"]
+	path = Project/QtCreator/qctools-QtAVPlayer
+	url = https://github.com/valbok/QtAVPlayer.git

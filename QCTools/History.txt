@@ -1,0 +1,330 @@
+1.3.1, 2023-10-12
+===
+x Fix critical bug where QCTools would use context from the thumbnail track of the QCTools report, if present, rather than the context of the source file.
+
+1.3, 2023-09-13
+=== Thanks to New York Public Library and Smithsonian National Museum of African American History and Culture (NMAAHC) for their support and contributions on this release ===
++ Refactor of method to generate statistics, panels, and thumbnails based on QtAVPlayer.
++ Updates to several playback filters to support RGB based pixel formats.
++ Additional Value Highlight playback filter to show specific values in addition to ranges.
++ Options to show Action Safe and Title Safe boundaries, thx @bbgdzxng1.
++ Improvements to several filters including Broadcast Illegal Focus, Bit Plane, and Waveform Target.
++ Replacement of the Chroma Delay playback filter with one based upon FFmpeg's chromashift.
++ Added support with Pixel Scope playback filter with smaller videos.
+x Fix typo that broke part of the Extract Planes Equalized playback filter.
+x Improvements on reading files that contain non-audiovisual streams.
++ Readnig panels from qctools.mkv report.
++ The Datascope, Waveform Target, Vectorscope Target, Zoom, and Pixel Scope filters now use a resizable/movable selection box to determine their area of focus.
++ Adding a blockdetect and blurdetect graph.
++ Switching to QtAVPlayer for graphing and playback, which also adds ffmpeg5 support to QCTools
+x Fix issue with saving reports with comments (#738).
++ Added tests for valid files.
++ Performance improvements in player via QtAVPlayer.
+x Fixes to audio statistics timestamps (#778).
+x Fixes for loading/saving panels.
+x Fixes to playback via the graph view.
+
+1.2.1, 2022-02-12
+x Fix issue with piped input to qcli (PR #704)
+
+1.2, 2020-12-18
+=== Thanks to TIB – Leibniz Information Centre for Science and Technology for their vision and support on this release ===
++ Adds panel tracks which show timeline-based images that depict audio or video tracks (PR #651). Initial tracks supported are:
+  | - Tiled Center Column
+  | - Tiled Center Column (Field Split)
+  | - Tiled Center Row
+  | - Horizontal Blur
+  | - Audio Waveform (Linear)
+  | - Audio Waveform (Logarithmic)
+  | - Audio NormalizedAudio Histogram
++ Move toggle for graph/panel display from a toolbar to a popup window (PR #651)
++ Add a graph of zero-crossing rate for audio tracks (PR #669/675)
++ Add a graph of active video bitdepth (PR #672)
++ Add a QCVault feature to qcli and QCTools to save QCTools reports in a selected folder or to a sidecar file
++ Change default QCTools reporting format from gzipped xml (.xml.gz) to Matroska (.qctools.mkv) (PR #660)
++ Added options to qcli for panel and track selection, reading/setting preferences shared with qctools (PR #666, 667)
+x Fix astats plotting issues by evaluating audio data as floats(PR #669)
+x Fix selection of fill/highlight color in qctools player (PR #663)
+x Fix when plotting audio sample tracks that are not 48kHz when the ebur128 graph is enabled (PR #675)
+x Fix to provide graphs for more than one audio or video track (PR #668)
+x Fix a crash when expected metadata was not avaialble for first few frames (PR #677)
+x Fix stack overflow when skimming graphs (PR #630)
+
+1.1, 2020-03-05
+=== Thanks to New York Public Library and the Hirshhorn Museum and Sculpture Garden for their support ===
++ Player is refactored to QtAV/mdk
++ Updates to support GitHub Actions for testing environment
++ Add more filter options to CIE Scope, Waveform
++ Add debug mode and graphmonitor for filterchains
++ Add export to image option for the player
++ Add Temporal Histogram
+x Fix reset of histeq variable in some filters
++ Add metadata overlap for Normal player
++ Refactor Frame Tiles as Filmstrip
++ Adjust scaling to neighbor as a filterchain default
++ Update bit plane viewer to allow the full image of each bit plane
++ Updates to READeia608 filter
++ UI to adjust playback speed
++ Updates to player geomtry management and redrawing
++ Separate Luma and Chroma Adjustments to occur before the overall filterchain
++ Add 'fit to grid' option to force geometry of components of the filterchain
+x Fix crash is the first track was not video or audio
+
+1.0, 2018-04-09
++ Add possibility to wrap 'qctools.xml.gzip' report into 'mkv' to save thumbnails too
++ Add 'Entropy' and 'Entropy-diff' filters
++ Add 'Line Over Time' player
++ Add bar charts:
+  |- support of multiple colored conditions per chart
+  |- ability to specify condition using JS syntax
+  |- conditions editor with autocomplete and conditions validation
+  |- saving/loading charts conditions
+  |- predefined set of conditions
++ Introduce scriptable min/max for y-axis with JS syntax
++ Extract & save all the stats from each frame (eliminate the difference in output between ffmpeg & qcli)
++ Add xflat option to waveform
++ Polish UI (move filters view icon to the right, disable some menu items if no files selected, reduce space between thumbnails etc.)
++ Add 'Pixel Scope' player
++ Allow to jump into selected file's folder using 'reveal file location' menu item
++ Improve accuracy of grid overlay
++ Add 'Corners' player
++ Have QCTools open with the same filters that were selected when it was last closed
++ Show list of 20 recently opened files in 'File' menu
++ Add ability to zoom x/y axis and pan with mouse wheel & middle mouse button
++ Add code of conduct, update documentation, tooltips & contributing guidelines
+- Remove support for dotXml sidecars
+- Remove csv export
+- Remove experimental blackmagic integration
+~ Code cleanup
+x Add 'bits_per_raw_sample' to stream stats
+x Fix compatibility issues with the latest ffmpeg
+x Fix crash when there is no video stream and first stream is not audio either
+x Use correct labelling for interlacement values
+x Fix sample rate value in table
+x Fix sample aspect ratio in table
+x Fix limiter default max value for non 8-bit footage
+x Fix a few plots alignment issues
+x Fix 'Arrow keys do not page through frames in filter view' https://github.com/bavc/qctools/issues/417
+x Flush filtering pipeline to write stats for the last frame correctly
+
+0.9, 2017-08-15
+-----
++ Add scaling options for players (now with 100%, fit to window, and free scale)
++ Oscilloscope player
++ Support for a comments track for temporal annotations
++ Support a horizontal offset variable in 10 column Bit Plane player
++ Update graph selection from checkboxes to toggle buttons
++ Refactoring player code, deduplication, and cleanup
++ Add phase meter player
++ Documentation updates
++ Expanded --debug mode
++ Add a deflicker graph
++ Keyboard shortcut to copy the active timestamp
++ Add a chroma delay player
++ Add a luma adjust player
++ Add limiter player
++ Add Vectorscope High Low player
++ Update Broadcast Illegal Focus to use lutyuv rather than geq, better with non-8-bit
+x Fixes to frame tiles and value highlight players
+x Fixes scaling issues when there is a selection box
+x Fix loading pkt_size and pkt_duration from xml.gz files
+x Fix to use of VREP player with field split
+
+0.8, 2017-04-15
+-----
++ Added a QCTools command line interface, "qcli"
++ Added integration with Signalserver, uploading QCTools Report
++ Added aphasemeter player
++ Optimizations for playback and multithreading
++ Added ffprobe's stream and format metadata to the QCTools Report
++ Added graphs to plot packet duration time and packet size
++ Adjusted graphs y-axis to accommodate non-8 bit values
++ Display frame type in playback window
++ Added Cb and Cr shifting to the Chroma Adjust player
++ Added documentation for filters, thx @retokromer @kieranjol
++ Rework of documentation from development in HTML to Markdown
++ Added audio bitscope player (abitscope)
++ Added a 10 column bit player (shows a sample of the first 10 MSBs)
++ Added integration of font management to drawing text in playback filters
++ Graphs can be rearranged by dragging their checkboxes
++ The List view can be sorted by filename
++ Alphabetized the playback filter menu
++ Consolidate to one .pro file with options to build with homebrew or with decklink
++ Added EIA608 and VITC viewer
++ Added contribution guidelines to repository
+- Fix crash on incomplete Matroska
+- Fix to vectorscope when fields are split
+- Fix crashes when the input contains audio but no video
+- Fixing on opening xml.gz files
+
+0.7.3, 2016-10-10
+-----
++ Added graphing the SSIM (Structural SImilarity Metric) between the two fields
++ Added graphing interlacement detection data
++ Added graphing audio metric data via astats filter
++ Draggable/resizeable selection area in Waveform Target, Vectorscope Target, and Zoom
++ Support for plotting data in 10 bit when revelant (affects graphs for Y, U, V, Diffs, and SAT)
++ Add shortcut to zoom in on the graphs to show one sample per display pixel
++ Update waveform and vectorscope to show graticules
++ Sortable graph order
++ Improve playback filter for bitplanenoise
++ Add playback filter for bitplanenoisegraph
++ Add playback filter for waveform target
++ Improve playback filter for waveforms, datascope, line select, ciescope, histogram
+x Fixes error when opening files on external hard drives
+x Fixed many crashes
+x Fix on sliders when they increment in steps smaller than 1
+
+0.7.2, 2015-11-17
+-----
++ Add plotlines for reference black and white in YUV graphs (GitHub issue #96)
++ Add plotlines for broadcast illegal and yuv illegal saturation levels
++ Update waveform and vectorscope filters to new waveform and vectorscope filters in FFmpeg 2.8
++ Add field modes to Tile and Zoom
++ Add astats-based audio data
++ Preferences
+x Fixed crash with some big MOV files having count of audio samples of the count of audio blocks in the track header instead
+
+0.7.1, 2015-05-15
+-----
++ Expanded documentation and example images
++ Sample range filter - show broadcast against full range interpretation
+x Fixed crash with MOV files having non video/audio tracks (e.g. a caption track)
+x Fixed crash with some AVI files having streams with unknown format
+x Mac-styled toolbar disabled because the toolbar dos not permit to move the window as expected by Mac users
+x Show hh:mm:ss.mmm in playback window even if evaluation hasn’t happened yet
+x Fix crash with files having timecode as the first track
+
+0.7.0, 2015-02-17
+-----
++ Saturation Highlight playback filter
++ Zoom playback filter
++ Graph tracker text with semi transparent gray background
++ Basic support of Blackmagic DeckLink (tested on Mac, looking for a tester on Windows and Linux)
++ Added metadata columns in table view for color space, color range, frame rate details, sample aspect ratio
++ Added 'Broadcast Illegal Focus' filter
+x Zooming in with more than the default graphs, shifts display offset (GitHub issue #41)
+x Left-align graph labels, instead of centering them (GitHub issue #45)
+x Y-scale label values disappear when zooming (GitHub issue #46)
+x Seek was not possible in the playback window during the analysis
+x Some colors change, marker text contains data values (GitHub issue #23)
+x Support of Mac OS X 10.6 (GitHub issue #63)
+
+0.6.2, 2014-10-29
+-----
+x Memory leaks removed
+
+0.6.1, 2014-10-15
+-----
+x Crash with MP4 files on Mac OS X 10.7 (GitHub issue #40)
+
+0.6.0, 2014-10-09
+-----
++ Summarization statistics
++ pkt_duration_time is added to tha sidecar stats file in order to get the real end timestamp of the stream
++ The full width of graphs is used
++ File list info shows empty data instead of 0 when the video file is not present
++ Speed improvements
++ The graph marker is now on a frame value
++ RHEL/CentOS 6/7 binaries
++ Debian 6 binaries
++ Ctrl+G keyboard shortcut for "Go to frame at position" (GitHub issue #30)
++ F1 keyboard shortcut for help
+x Minimize/maximize button on video preview window (GitHub issue #24)
+x Position of cursor in graph not updated, when moving in preview window (GitHub issue #18)
+x YUVJ (full range) were shrinked to broadcast range, now using Ffmpeg update for better YUVJ handling (GitHub issue #36)
+x Wrong graphs in case FFmpeg does not provide a PTS e.g. with AVI (GitHub issue #12)
+x Slight documentation corrections
+x The sidecar stats file was not correctly detected if the media file is open instead of the sidecar stats file
+x Linux only: The sidecar stats file was not correctly loaded
+x Fix corrupted Broadcast Range display in some inputs (GitHub issue #10)
+x Line select now plots one line in a waveform, previous the next line and next line were plotted
+x MSEf, PSNR: Y and V were inverted
+x UI was not showing graphs if the file is open via the menu
+x Windows: icon was not always displayed in Windows menu
+x Mac: Playback window was not pushed to the forefront of the screen when a user clicks on a thumbnail but the first time
+x When clicking the "zoom in" button an insane number of times, QCTools was crashing (GitHub issue #39)
+
+0.5.0, 2014-09-12
+-----
++ New graph filters (Crop...)
++ Updated playback filters (with more options e.g. color picker, vertical filters)
++ Y-axis has minutes, hours options
++ Frame positioning vertical line
++ Import/Export of .qctools.xml.gz stats file (compatible with Ffmpeg 2.3 output)
++ Updated documentation
++ Using official FFmpeg 2.3
+
+0.4.0, 2014-04-26
+-----
++ New graph filters (MSEf, PSNR...)
++ New playback filters (Value hightlight, Chroma adjust...)
++ Configurable playback filters (with checkboxes, radiobuttons, sliders...)
++ Multifiles support
++ Refreshed UI
++ Speed optimizations
++ Tested compatibility with Windows XP to 8, Mac OS X 10.6 to 10.9
+
+0.3.0, 2014-01-27
+-----
++ Refactoring of code, optimization of performance/binary size/memory footprint/count of bytes read from disk
++ Using display aspect ratio from the stream
++ Video filters update
++ Documentation update
++ Slider in Video Analysis Window
++ Double-view in Video Analysis Window
++ Resizable Video Analysis Window
++ License update (more detailed)
+x Documentation is now conform to XHTML strict
+x HEAD values were not correctly loaded from the sidecar CSV file
+
+0.2.0, 2014-01-20
+-----
++ Using ffmpeg library instead of ffmpeg command line for thumbnail creation and picture display (speed improvement)
++ Playback (fast/normal/slow rewind, fast/normal/slow forward)
++ Documentation update
++ Tooltips above checkboxes
++ "License" renamed to "About" (moved to the application menu on Mac OS X in order to meet UI guidelines)
++ CSV export: an header line is added
++ Ability to read the sidecar CSV file (named "FileName.FileExtension.qctools.csv") during file opening
+
+0.1.6, 2013-11-11
+-----
++ FFmpeg is compiled with YASM and GPLv3: smoother decoding and all predefined filters are present
++ Possibility to select frames instead of seconds for X axis
++ New block in main window with all stats about the current frame
+x Small shift of x axis is corrected (Mac only)
+
+0.1.5, 2013-11-07
+-----
+x Plots add/remove is smoother
+x Plots add/remove was crashing if no file is open (0.1.4 regression)
+x previous/next buttons in image display window are back (0.1.4 regression)
+x previous/next buttons in image display window disabled when not applicable (e.g. Previous is disabled with frame 0)
+x All Diffs plots are correclty scaled and limited to 255
+x x axis were no more aligned due to the "Frame" label (0.1.3 regression)
++ y axis is forced to 0-1 scale (intead of -1 to 1) if data is always 0
+
+0.1.4, 2013-11-07
+-----
+x Partially re-factorized code for better stability
+x Zoom out does not show anymore empty parts of the graphs
+x FFmpeg filtering with missing filters in formula are removed
+
+0.1.3, 2013-10-30
+-----
+x Zoom is centered on the current frame 
+
+0.1.2, 2013-10-30
+-----
++ add previous/next buttons to image display window
+x Fluctuating Graph Widths
+x Big main window
+
+0.1.1, 2013-10-02
+-----
++ License update
++ Help files update
++ ffmpeg update in order to fix timescale issue
++ frames bigger as screen are resized
++ frames cache size reduced to 20 frames (instead of 100 frames) for speed improvement

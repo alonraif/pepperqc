@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">PepperQC Chili Pepper</title>
+  <desc id="desc">Stylized red chili pepper with green stem and glow</desc>
+  <defs>
+    <linearGradient id="pepperGradient" x1="12" y1="30" x2="108" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f87171" />
+      <stop offset="45%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+    <radialGradient id="pepperHighlight" cx="42" cy="48" r="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fee2e2" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#fda4af" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="stemGradient" x1="56" y1="14" x2="78" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4ade80" />
+      <stop offset="60%" stop-color="#15803d" />
+      <stop offset="100%" stop-color="#14532d" />
+    </linearGradient>
+    <filter id="pepperGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#ef4444" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <g filter="url(#pepperGlow)">
+    <path
+      d="M69.2 21.6c-4.8 0-9.6 2-13.3 5.7l-3.1 3.2c-6.4-4.4-13.3-6.8-20.3-6.8-9.8 0-18.6 4.9-22.8 12.9-7.9 15.4-2.1 39.6 14.2 56.3 11.5 11.8 27.4 19.5 41.4 19.5 12.9 0 23.6-5.5 29.4-15 6.6-11 4.7-24.9-5.1-36.7l5.5-6c4-4.3 6-9.4 5.8-14.6-.2-5.1-2.5-9.8-6.5-13.6-5-4.8-11.6-7.9-18.5-8.9a20.8 20.8 0 0 0-2.7-.2z"
+      fill="url(#pepperGradient)"
+    />
+    <path
+      d="M38.5 32.4c5.6 0 11.3 2.2 16.8 6.5-11.9 14.6-15.7 33.8-9.1 49.8 1.1 2.7 2.6 5.3 4.2 7.7-8.7-2.5-17.4-8.4-24.4-16-12.9-13.2-18.1-33.8-11.9-45.9 3.1-6.1 10-9.8 18.4-9.8z"
+      fill="url(#pepperHighlight)"
+      opacity="0.85"
+    />
+    <path
+      d="M78.7 24.3c6.6 1 13.1 4 18 8.6 6.7 6.3 6.6 15.4-.3 23l-5 5.4c-9.5-8.9-21.6-14.5-33.4-15 3.7-8.3 11.2-22.3 20.7-22z"
+      fill="#9f1239"
+      opacity="0.35"
+    />
+    <path
+      d="M66.8 32.2c2.9-7.2 10.5-12.4 18.1-11.7 2.5.2 3.5-4.6.4-6.4-7.7-4.5-17.5-.8-23.9 7.7-4.9 6.6-8.2 15.6-9.3 21.4 5-3 10-6.9 14.7-11z"
+      fill="url(#stemGradient)"
+    />
+    <path
+      d="M46 83.1c10 6.3 21.6 8.9 31.1 7.1 8-1.6 14.4-6 18.5-12.7-1 8.3-5.4 15.4-12.7 19.4-11.3 6.1-27 3.6-40.4-6.3-8.6-6.2-15.2-14.6-19.2-23.3 6.1 6.2 13.7 12.1 22.7 15.8z"
+      fill="#7f1d1d"
+      opacity="0.35"
+    />
+  </g>
+</svg>

@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    # The environment variables are now read from the .env file by Docker Compose
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+
+  db-init:
+    build: ./backend
+    environment:
+      - DATABASE_URL=${DATABASE_URL} # Read from .env
+    depends_on:
+      - db
+    command: ["python", "init_db.py"]
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      # --- THIS IS THE LIVE RELOAD BIND MOUNT (Step 2) ---
+      # It maps your local backend code directly into the container.
+      # When you save a .py file, the container sees it instantly.
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    environment:
+      - DATABASE_URL=${DATABASE_URL} # Read from .env
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TELEGRAM_BOT_TOKEN=8290318832:AAGo5E-EP0UVwyNiERy0LTp3F8LevUbhGQs
+      - PYTHONPATH=/app
+    depends_on:
+      - db-init
+      - redis
+    restart: on-failure
+    # --- THIS IS THE LIVE RELOAD COMMAND (Step 2) ---
+    # Gunicorn's --reload flag watches for file changes.
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--reload", "main:app"]
+
+  worker:
+    build: ./backend
+    volumes:
+      # --- ALSO ADD THE BIND MOUNT TO THE WORKER ---
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    environment:
+      - DATABASE_URL=${DATABASE_URL} # Read from .env
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TELEGRAM_BOT_TOKEN=8290318832:AAGo5E-EP0UVwyNiERy0LTp3F8LevUbhGQs
+      - PYTHONPATH=/app
+    depends_on:
+      - db-init
+      - redis
+    restart: on-failure
+    # --- The Celery worker has its own reload flag ---
+    command: ["celery", "-A", "main.celery", "worker", "--loglevel=info", "--autoscale=10,3", "-P", "prefork"]
+
+  redis:
+    image: "redis:alpine"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  uploads:
+  postgres_data:

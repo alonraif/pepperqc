@@ -1,0 +1,43 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file alias="document-open.png">document-open.png</file>
+        <file alias="export_xml.png">export_xml.png</file>
+        <file alias="document-print.png">document-print.png</file>
+        <file alias="help.png">help.png</file>
+        <file alias="zoom-in.png">zoom-in.png</file>
+        <file alias="zoom-out.png">zoom-out.png</file>
+        <file alias="logo.png">Logo.png</file>
+        <file alias="multifile_layout.png">multifile_layout.png</file>
+        <file alias="graph_layout.png">graph_layout.png</file>
+        <file alias="filters_layout.png">filters_layout.png</file>
+        <file alias="window-out.png">window-out.png</file>
+        <file alias="dropfiles.png">dropfiles_gray.png</file>
+        <file alias="play.png">play.png</file>
+        <file alias="pause.png">pause.png</file>
+        <file alias="backward.png">backward.png</file>
+        <file alias="forward.png">forward.png</file>
+        <file>zoom-one.png</file>
+        <file>signalserver_error.png</file>
+        <file>signalserver_not_uploaded.png</file>
+        <file>signalserver_success.png</file>
+        <file>signalserver_upload.png</file>
+        <file>signalserver_uploading.png</file>
+        <file>settings.png</file>
+        <file>bar_chart.png</file>
+        <file>chart_chart.png</file>
+        <file>first_frame.png</file>
+        <file>grab_imag.png</file>
+        <file>last_frame.png</file>
+    </qresource>
+    <qresource prefix="/">
+        <file alias="Help/About.html">../../License.html</file>
+        <file alias="Help/getting_started.md">../../docs/getting_started.md</file>
+        <file alias="Help/how_to_use.md">../../docs/how_to_use.md</file>
+        <file alias="Help/filter_descriptions.md">../../docs/filter_descriptions.md</file>
+        <file alias="Help/playback_filters.md">../../docs/playback_filters.md</file>
+        <file alias="Help/data_format.md">../../docs/data_format.md</file>
+        <file alias="Help/recording.md">../../docs/recording.md</file>
+        <file>Anonymous_Pro_B.ttf</file>
+        <file>barchart_profiles/default.json</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,272 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  linux:
+    strategy:
+      matrix:
+        compiler: ['gcc-9']
+        qt_version: ["5.15.2", "6.6.2"]
+        include:
+          - compiler: gcc-9
+            packages: gcc-9 g++-9
+            env: { 'CC': 'gcc-9', 'CXX': 'g++-9' }
+          - qt_version: "6.6.2"
+            qt_modules: "qtmultimedia"
+            qt_packages: "libxkbcommon-dev libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0"
+
+    runs-on: ubuntu-latest
+
+    env: ${{ matrix.env }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install compiler and FFmpeg dependencies
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y ${{ matrix.packages }} ${{ matrix.qt_packages }} \
+                                  libavcodec-dev \
+                                  libavformat-dev \
+                                  libavdevice-dev \
+                                  libavfilter-dev \
+                                  libavformat-dev \
+                                  libavutil-dev \
+                                  libswresample-dev \
+                                  libswscale-dev \
+                                  libva-x11-2 \
+                                  libva-drm2
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt_version }}
+          modules: ${{ matrix.qt_modules }}
+
+      - name: QMake Test
+        run: |
+          export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
+          cd tests/auto/integration/qavdemuxer
+          qmake
+          make CC=$CC CXX=$CXX
+          ./tst_qavdemuxer
+          cd ../qavplayer
+          qmake
+          make CC=$CC CXX=$CXX
+          ./tst_qavplayer --platform minimal -maxwarnings 100000
+
+      - name: QMake Examples
+        run: |
+          cd examples/qml_video
+          qmake
+          make CC=$CC CXX=$CXX
+          cd ../extract_frames
+          qmake
+          make CC=$CC CXX=$CXX
+
+      - name: CMake Examples
+        run: |
+          cd examples/qml_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+          cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+
+  macos:
+    strategy:
+      matrix:
+        compiler: ['clang-9']
+        include:
+          - compiler: clang-9
+            packages: llvm@13
+            env: { 'CC': 'clang', 'CXX': 'clang++', 'CXXFLAGS': '-DNS_FORMAT_ARGUMENT\(A\)= -fapplication-extension -std=c++17' }
+
+    runs-on: macos-latest
+
+    env: ${{ matrix.env }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          brew install ${{ matrix.packages }} ffmpeg qt@5
+
+      - name: Set environment path
+        run: |
+          brew --prefix ffmpeg
+          brew --prefix qt@5
+          echo `brew --prefix qt@5`/bin >> $GITHUB_PATH
+          echo "/usr/local/opt/llvm@9/bin" >> $GITHUB_PATH
+
+      - name: QMake Test
+        run: |
+          export FFMPEG=`brew --prefix ffmpeg`
+          ls -l $FFMPEG
+          export QT_LOGGING_RULES="qt.QtAVPlayer.debug=true"
+          cd tests/auto/integration/qavdemuxer
+          qmake INCLUDEPATH+="$FFMPEG/include" LIBS="-L$FFMPEG/lib"
+          make CC=$CC CXX=$CXX
+          tst_qavdemuxer.app/Contents/MacOS/tst_qavdemuxer
+          cd ../qavplayer
+          qmake INCLUDEPATH+="$FFMPEG/include" LIBS="-L$FFMPEG/lib"
+          make CC=$CC CXX=$CXX
+          tst_qavplayer.app/Contents/MacOS/tst_qavplayer --platform minimal -maxwarnings 100000
+
+      - name: QMake Examples
+        run: |
+          export FFMPEG=`brew --prefix ffmpeg`
+          cd examples/qml_video
+          qmake INCLUDEPATH+="$FFMPEG/include" LIBS+="-L$FFMPEG/lib"
+          make CC=$CC CXX=$CXX
+          cd ../extract_frames
+          qmake INCLUDEPATH+="$FFMPEG/include" LIBS+="-L$FFMPEG/lib"
+          make CC=$CC CXX=$CXX
+
+      - name: CMake Examples
+        run: |
+          export FFMPEG=`brew --prefix ffmpeg`
+          cd examples/qml_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG/include -DCMAKE_LIBRARY_PATH=$FFMPEG/lib
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+          cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=$FFMPEG/include -DCMAKE_LIBRARY_PATH=$FFMPEG/lib
+          make CC=$CC CXX=$CXX CXXFLAGS='-std=c++17' VERBOSE=1
+
+  windows:
+    strategy:
+      matrix:
+        qt_version: ["5.15.2", "6.6.2"]
+        type: ["MSVC", "MINGW"]
+        include:
+          - qt_version: "6.6.2"
+            qt_modules: "qtmultimedia"
+
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Init vs environment
+        if: ${{ matrix.type == 'MSVC' }}
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Install wget & unzip
+        run: |
+          choco install wget unzip xidel
+
+      - name: Install Qt
+        if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '5.15.2' }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          arch: win64_mingw81
+          version: ${{ matrix.qt_version }}
+
+      - name: Install Qt
+        if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '6.6.2' }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          arch: win64_mingw
+          version: ${{ matrix.qt_version }}
+          modules: ${{ matrix.qt_modules }}
+
+      - name: Install Qt
+        if: ${{ matrix.type == 'MSVC' }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt_version }}
+          modules: ${{ matrix.qt_modules }}
+
+      - name: Install FFmpeg
+        shell: cmd
+        run: |
+          cd ..
+          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "//a[contains(@href, '-gpl-shared.zip')]/@href[1]" --silent > ffmpeg.url
+          xidel https://github.com/BtbN/FFmpeg-Builds/releases -e "(//a[contains(@href, '-gpl-shared.zip')])[1]/substring(., 0, string-length(.) - 3)" --silent > ffmpeg.name
+          set /P FFMPEG_URL=< ffmpeg.url
+          set /P FFMPEG_NAME=< ffmpeg.name
+          wget https://github.com%FFMPEG_URL%
+          unzip %FFMPEG_NAME%.zip
+          ren %FFMPEG_NAME% ffmpeg
+          dir ffmpeg
+          dir ffmpeg\include
+          dir ffmpeg\bin
+          SET FFMPEG=%CD%\ffmpeg
+          echo FFMPEG=%FFMPEG%>>%GITHUB_ENV%
+          echo PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
+          echo LIBRARY_PATH=%FFMPEG%\lib;%FFMPEG%\bin;%PATH%>>%GITHUB_ENV%
+          echo INCLUDE=%FFMPEG%\include;%INCLUDE%>>%GITHUB_ENV%
+          echo CPLUS_INCLUDE_PATH=%FFMPEG%\include;%CPLUS_INCLUDE_PATH%>>%GITHUB_ENV%
+          echo LIB=%FFMPEG%\lib;%FFMPEG%\bin;%LIB%>>%GITHUB_ENV%
+
+      - name: QMake Test
+        if: ${{ matrix.type == 'MSVC' }}
+        shell: cmd
+        run: |
+          set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
+          set QT_FORCE_STDERR_LOGGING=1
+          set QT_ASSUME_STDERR_HAS_CONSOLE=1
+          cd tests/auto/integration/qavdemuxer
+          qmake
+          nmake
+          release\tst_qavdemuxer.exe
+          cd ../qavplayer
+          cd qavplayer
+          qmake
+          nmake
+          release\tst_qavplayer.exe -maxwarnings 100000
+
+      - name: QMake Test
+        if: ${{ matrix.type == 'MINGW' && matrix.qt_version == '5.15.2' }}
+        shell: cmd
+        run: |
+          set QT_LOGGING_RULES=qt.QtAVPlayer.debug=true
+          set QT_FORCE_STDERR_LOGGING=1
+          set QT_ASSUME_STDERR_HAS_CONSOLE=1
+          cd tests/auto/integration/qavdemuxer
+          qmake
+          mingw32-make
+          release\tst_qavdemuxer.exe
+          cd ../qavplayer
+          qmake
+          mingw32-make
+          release\tst_qavplayer.exe -maxwarnings 100000
+
+      - name: QMake Examples
+        if: ${{ matrix.type == 'MSVC' }}
+        run: |
+          cd examples/qml_video
+          qmake
+          nmake
+          cd ../extract_frames
+          qmake
+          nmake
+
+      - name: CMake Examples
+        if: ${{ matrix.type == 'MSVC' }}
+        run: |
+          cd examples/qml_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
+          cmake --build . -v
+          cd ../widget_video
+          cmake . -DQT_AVPLAYER_MULTIMEDIA=ON -DCMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES=D:\a\QtAVPlayer\ffmpeg\include -DCMAKE_LIBRARY_PATH=D:\a\QtAVPlayer\ffmpeg\lib
+          cmake --build . -v
+
+      - name: QMake Examples
+        if: ${{ matrix.type == 'MINGW' }}
+        run: |
+          cd examples/qml_video
+          qmake
+          mingw32-make
+          cd ../extract_frames
+          qmake
+          mingw32-make
+
