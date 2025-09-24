@@ -25,6 +25,7 @@ import {
   Warning as WarningIcon,
   Error as ErrorIcon,
   Save as SaveIcon,
+  Tune as TuneIcon,
 } from '@mui/icons-material';
 
 const SystemConfiguration = () => {
@@ -175,6 +176,38 @@ const SystemConfiguration = () => {
       )}
 
       <Grid container spacing={3}>
+        {/* QC Analysis Presets */}
+        <Grid item xs={12}>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                <TuneIcon color="primary" />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  QC Analysis Presets
+                </Typography>
+              </Stack>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Configure quality control analysis settings, thresholds, and severity levels for media processing.
+              </Typography>
+
+              <Button
+                variant="outlined"
+                component="a"
+                href="#/presets"
+                startIcon={<TuneIcon />}
+                sx={{ mr: 2 }}
+              >
+                Manage QC Presets
+              </Button>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Set up QCTools tests, FFmpeg detectors, severity thresholds, and analysis parameters.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* SSL/HTTPS Configuration */}
         <Grid item xs={12} md={6}>
           <Card sx={{ height: 'fit-content' }}>

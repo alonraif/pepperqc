@@ -13,7 +13,6 @@ import {
   Tooltip,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Speed';
-import TuneIcon from '@mui/icons-material/Tune';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -22,7 +21,6 @@ import ColorModeContext from './theme/ColorModeContext';
 
 const navItems = [
   { label: 'Overview', to: '/', icon: <DashboardIcon fontSize="small" /> },
-  { label: 'Presets', to: '/presets', icon: <TuneIcon fontSize="small" /> },
   { label: 'Settings', to: '/settings', icon: <SettingsIcon fontSize="small" /> },
 ];
 
