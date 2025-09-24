@@ -337,7 +337,7 @@ def _build_caddyfile(hostname: str, email: str) -> str:
     base_header_lines.append('}')
 
     api_block = [
-        '  @api path_prefix /api',
+        '  @api path /api/*',
         '  reverse_proxy @api backend:5000',
         '  reverse_proxy frontend:80',
     ]
