@@ -75,6 +75,7 @@ const buildInitialForm = (catalog) => ({
         param.default !== undefined && param.default !== null ? String(param.default) : '',
       ])
     ),
+    defaultSeverity: 'non_critical',
   })),
   is_default: false,
 });
@@ -145,6 +146,7 @@ const normalizePayload = (form, catalog) => ({
       id: detector.id,
       enabled: Boolean(detector.enabled),
       params,
+      default_severity: detector.defaultSeverity === 'critical' ? 'critical' : 'non_critical',
     };
   }),
 });
@@ -278,6 +280,20 @@ const PresetManager = () => {
     }));
   };
 
+  const handleDetectorSeverityToggle = (detectorId) => (event) => {
+    const nextValue = event.target.checked ? 'critical' : 'non_critical';
+    setForm((prev) => ({
+      ...prev,
+      ffmpeg: prev.ffmpeg.map((detector) => {
+        if (detector.id !== detectorId) return detector;
+        return {
+          ...detector,
+          defaultSeverity: nextValue,
+        };
+      }),
+    }));
+  };
+
   const handleTracksChange = (type) => (event, value) => {
     if (!value) return;
     setForm((prev) => ({ ...prev, [`${type}_tracks`]: value }));
@@ -355,6 +371,7 @@ const PresetManager = () => {
         id: detector.id,
         enabled: Boolean(existing.enabled),
         params,
+        defaultSeverity: existing.default_severity === 'critical' ? 'critical' : 'non_critical',
       };
     });
 
@@ -707,21 +724,44 @@ const PresetManager = () => {
                         </Stack>
 
                         {formDetector.enabled && (
-                          <Grid container spacing={2} sx={{ mt: 2 }}>
-                            {(detector.params || []).map((param) => (
-                              <Grid item xs={12} md={4} key={param.key} className="threshold-field">
-                                <TextField
-                                  label={param.label}
-                                  type={param.type === 'number' ? 'number' : 'text'}
-                                  size="small"
-                                  value={formDetector.params[param.key] ?? ''}
-                                  onChange={handleDetectorParamChange(detector.id, param.key)}
-                                  InputProps={{ sx: { borderRadius: '10px', color: 'var(--text-primary)' } }}
-                                  helperText={param.hint}
-                                />
+                          <Box sx={{ mt: 3 }}>
+                            <Stack spacing={2}>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={formDetector.defaultSeverity === 'critical'}
+                                    onChange={handleDetectorSeverityToggle(detector.id)}
+                                    size="small"
+                                  />
+                                }
+                                label={`Default severity: ${
+                                  formDetector.defaultSeverity === 'critical' ? 'Critical' : 'Non-critical'
+                                }`}
+                                sx={{
+                                  '& .MuiFormControlLabel-label': {
+                                    color: 'var(--text-muted)',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 500,
+                                  },
+                                }}
+                              />
+                              <Grid container spacing={2}>
+                                {(detector.params || []).map((param) => (
+                                  <Grid item xs={12} md={4} key={param.key} className="threshold-field">
+                                    <TextField
+                                      label={param.label}
+                                      type={param.type === 'number' ? 'number' : 'text'}
+                                      size="small"
+                                      value={formDetector.params[param.key] ?? ''}
+                                      onChange={handleDetectorParamChange(detector.id, param.key)}
+                                      InputProps={{ sx: { borderRadius: '10px', color: 'var(--text-primary)' } }}
+                                      helperText={param.hint}
+                                    />
+                                  </Grid>
+                                ))}
                               </Grid>
-                            ))}
-                          </Grid>
+                            </Stack>
+                          </Box>
                         )}
                       </Box>
                     );

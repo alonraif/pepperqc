@@ -2,7 +2,9 @@ import os
 import json
 import uuid
 import shutil
+import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from celery import Celery, states
@@ -101,6 +103,15 @@ class TelegramRecipient(db.Model):
 class TelegramConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bot_token = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SystemConfig(db.Model):
+    __tablename__ = 'system_config'
+
+    key = db.Column(db.String(120), primary_key=True)
+    value = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -254,6 +265,201 @@ def clear_telegram_bot_token():
         raise
     return config
 
+
+def _get_system_config_value(key: str, default=None):
+    entry = SystemConfig.query.get(key)
+    if entry is None:
+        return default
+    return entry.value
+
+
+def _set_system_config_value(key: str, value: str):
+    entry = SystemConfig.query.get(key)
+    timestamp = datetime.utcnow()
+    if entry is None:
+        entry = SystemConfig(key=key, value=value, created_at=timestamp, updated_at=timestamp)
+        db.session.add(entry)
+    else:
+        entry.value = value
+        entry.updated_at = timestamp
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    return entry
+
+
+def get_domain_settings():
+    return {
+        'hostname': _get_system_config_value('domain.hostname', ''),
+        'lets_encrypt_email': _get_system_config_value('domain.lets_encrypt_email', ''),
+    }
+
+
+def _write_caddyfile(contents: str) -> None:
+    target_path = os.environ.get('CADDYFILE_PATH')
+    if not target_path:
+        return
+    target = Path(target_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(contents, encoding='utf-8')
+
+
+def _load_caddy_config(contents: str) -> None:
+    admin_url = os.environ.get('CADDY_ADMIN_URL')
+    if not admin_url:
+        return
+    try:
+        response = requests.post(
+            f"{admin_url.rstrip('/')}/load",
+            data=contents,
+            headers={'Content-Type': 'text/caddyfile'},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise RuntimeError(f'Unable to apply configuration via Caddy admin API: {exc}') from exc
+
+
+def _build_caddyfile(hostname: str, email: str) -> str:
+    base_header_lines = ['{', '  admin 0.0.0.0:2019']
+    if email:
+        base_header_lines.append(f'  email {email}')
+    if not hostname:
+        base_header_lines.append('  auto_https off')
+    base_header_lines.append('}')
+
+    api_block = [
+        '  @api path_prefix /api',
+        '  reverse_proxy @api backend:5000',
+        '  reverse_proxy frontend:80',
+    ]
+
+    if hostname:
+        site_block = [
+            f'{hostname} {{',
+            '  encode zstd gzip',
+        ] + api_block + [
+            '  log {',
+            '    output file /var/log/caddy/access.log',
+            '  }',
+            '}',
+            '',
+            f'http://{hostname} {{',
+            '  redir https://{host}{uri} 308',
+            '}',
+        ]
+    else:
+        site_block = [
+            ':80 {',
+            '  encode zstd gzip',
+        ] + api_block + ['}']
+
+    lines = base_header_lines + [''] + site_block
+    return '\n'.join(lines) + '\n'
+
+
+def apply_reverse_proxy_configuration(hostname: str, email: str) -> None:
+    caddyfile_contents = _build_caddyfile(hostname, email)
+    _write_caddyfile(caddyfile_contents)
+    try:
+        _load_caddy_config(caddyfile_contents)
+    except RuntimeError as exc:
+        raise
+
+
+def _find_certificate_metadata(hostname: str):
+    storage_root = os.environ.get('CADDY_STORAGE_PATH')
+    if not storage_root or not hostname:
+        return None
+
+    certificates_dir = Path(storage_root) / 'certificates'
+    if not certificates_dir.exists():
+        return None
+
+    # Search within ACME directories
+    try:
+        for issuer_dir in certificates_dir.iterdir():
+            potential = issuer_dir / hostname / f'{hostname}.json'
+            if potential.exists():
+                try:
+                    payload = json.loads(potential.read_text(encoding='utf-8'))
+                    return payload
+                except (ValueError, OSError):
+                    continue
+    except OSError:
+        return None
+    return None
+
+
+def get_certificate_status(hostname: str):
+    metadata = _find_certificate_metadata(hostname)
+    if not metadata:
+        return {
+            'has_certificate': False,
+            'expires_at': None,
+            'days_remaining': None,
+        }
+
+    expires_at = metadata.get('expires')
+    expires_dt = None
+    if expires_at:
+        try:
+            expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+        except ValueError:
+            expires_dt = None
+
+    days_remaining = None
+    if expires_dt:
+        delta = expires_dt - datetime.utcnow().replace(tzinfo=expires_dt.tzinfo)
+        days_remaining = round(delta.total_seconds() / 86400, 2)
+
+    return {
+        'has_certificate': True,
+        'expires_at': expires_dt.isoformat() if expires_dt else expires_at,
+        'days_remaining': days_remaining,
+    }
+
+
+_HOSTNAME_PATTERN = re.compile(r'^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.(?:[A-Za-z0-9-]{1,63}\.)*[A-Za-z]{2,63}$')
+
+
+def _is_valid_hostname(hostname: str) -> bool:
+    if not hostname:
+        return False
+    candidate = hostname.strip().lower()
+    if candidate.endswith('.'): 
+        candidate = candidate[:-1]
+    if candidate.count('.') < 1:
+        return False
+    return bool(_HOSTNAME_PATTERN.match(candidate))
+
+
+def _compose_telegram_settings():
+    status = get_telegram_token_status()
+    configured = telegram_is_configured(get_telegram_bot_token())
+    recipients_total = TelegramRecipient.query.count()
+    latest_test = db.session.query(func.max(TelegramRecipient.last_tested_at)).scalar()
+
+    return {
+        'configured': configured,
+        'token_source': status['source'],
+        'token_last_updated_at': status['last_updated_at'],
+        'recipient_count': recipients_total,
+        'last_tested_at': latest_test.isoformat() if latest_test else None,
+    }
+
+
+def _compose_domain_settings():
+    settings = get_domain_settings()
+    hostname = (settings.get('hostname') or '').strip()
+    cert_info = get_certificate_status(hostname)
+    return {
+        'hostname': hostname,
+        'lets_encrypt_email': settings.get('lets_encrypt_email') or '',
+        'certificate': cert_info,
+    }
 
 def _send_notifications(text, attachment_path=None, attachment_caption=None):
     token = get_telegram_bot_token()

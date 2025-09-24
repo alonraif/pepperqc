@@ -547,6 +547,7 @@ def normalize_qctools_preset(preset: Dict[str, Any]) -> Dict[str, Any]:
             "id": detector["id"],
             "enabled": bool(config.get("enabled", detector.get("default_enabled", False))),
             "params": params,
+            "default_severity": config.get("default_severity", "non_critical"),
         })
 
     return normalized
@@ -925,15 +926,16 @@ def run_ffmpeg_detectors(file_path, preset):
         if not config or not config.get("enabled"):
             continue
         params = config.get("params", {}) if isinstance(config.get("params"), dict) else {}
+        default_severity = config.get("default_severity", "non_critical")
 
         if detector["id"] == "blackdetect":
-            detector_issues = detect_black_frames_ffmpeg(file_path, params)
+            detector_issues = detect_black_frames_ffmpeg(file_path, params, default_severity)
         elif detector["id"] == "freezedetect":
-            detector_issues = detect_freeze_frames_ffmpeg(file_path, params)
+            detector_issues = detect_freeze_frames_ffmpeg(file_path, params, default_severity)
         elif detector["id"] == "silencedetect":
-            detector_issues = detect_silence_ffmpeg(file_path, params)
+            detector_issues = detect_silence_ffmpeg(file_path, params, default_severity)
         elif detector["id"] == "overlaytext":
-            detector_issues = detect_overlay_text(file_path, params)
+            detector_issues = detect_overlay_text(file_path, params, default_severity)
         else:
             detector_issues = []
 
@@ -947,7 +949,7 @@ def run_ffmpeg_detectors(file_path, preset):
     return {"issues": issues, "reports": reports}
 
 
-def detect_black_frames_ffmpeg(file_path, params):
+def detect_black_frames_ffmpeg(file_path, params, default_severity="non_critical"):
     duration = _coerce_float(params.get("duration"), 0.5) or 0.5
     picture_threshold = _coerce_float(params.get("picture_threshold"), 0.98) or 0.98
     pixel_threshold = _coerce_float(params.get("pixel_threshold"), 0.10) or 0.10
@@ -997,7 +999,7 @@ def detect_black_frames_ffmpeg(file_path, params):
                             "pixel_threshold": pixel_threshold,
                         },
                         "source": "ffmpeg-blackdetect",
-                        "severity": "non_critical",
+                        "severity": default_severity,
                     }
                 )
                 current = {}
@@ -1006,7 +1008,7 @@ def detect_black_frames_ffmpeg(file_path, params):
     return issues
 
 
-def detect_freeze_frames_ffmpeg(file_path, params):
+def detect_freeze_frames_ffmpeg(file_path, params, default_severity="non_critical"):
     noise = _coerce_float(params.get("noise"), 0.003)
     if noise is None or noise <= 0:
         noise = 0.003
@@ -1064,7 +1066,7 @@ def detect_freeze_frames_ffmpeg(file_path, params):
                             "duration_threshold": duration,
                         },
                         "source": "ffmpeg-freezedetect",
-                        "severity": "non_critical",
+                        "severity": default_severity,
                     }
                 )
                 current = {}
@@ -1073,7 +1075,7 @@ def detect_freeze_frames_ffmpeg(file_path, params):
     return issues
 
 
-def detect_silence_ffmpeg(file_path, params):
+def detect_silence_ffmpeg(file_path, params, default_severity="non_critical"):
     noise_db = _coerce_float(params.get("noise"), -30.0) or -30.0
     duration = _coerce_float(params.get("duration"), 2.0) or 2.0
 
@@ -1121,7 +1123,7 @@ def detect_silence_ffmpeg(file_path, params):
                             "duration_threshold": duration,
                         },
                         "source": "ffmpeg-silencedetect",
-                        "severity": "non_critical",
+                        "severity": default_severity,
                     }
                 )
                 current = {}
@@ -1154,7 +1156,7 @@ def _parse_csv_list(text):
     return [item.strip().lower() for item in str(text).split(",") if item.strip()]
 
 
-def detect_overlay_text(file_path, params):
+def detect_overlay_text(file_path, params, default_severity="non_critical"):
     if cv2 is None or pytesseract is None:
         print("Skipping overlay text detection because OCR dependencies are unavailable.")
         return []
@@ -1275,7 +1277,7 @@ def detect_overlay_text(file_path, params):
             duration = max(end_time - track["start"], sample_duration)
             if duration >= min_duration:
                 avg_conf = track["confidence_sum"] / track["samples"]
-                severity = "critical" if track.get("keyword_hits", 0) > 0 else "warning"
+                severity = "critical" if track.get("keyword_hits", 0) > 0 else default_severity
                 issues.append(
                     {
                         "event": "Overlay text detected",
@@ -1305,7 +1307,7 @@ def detect_overlay_text(file_path, params):
         duration = max(end_time - track["start"], sample_duration)
         if duration >= min_duration:
             avg_conf = track["confidence_sum"] / track["samples"]
-            severity = "critical" if track.get("keyword_hits", 0) > 0 else "warning"
+            severity = "critical" if track.get("keyword_hits", 0) > 0 else default_severity
             issues.append(
                 {
                     "event": "Overlay text detected",
@@ -1382,139 +1384,306 @@ def generate_job_report(job, analysis_result, upload_folder):
     c = canvas.Canvas(report_path, pagesize=letter)
     width, height = letter
 
-    def write_header():
-        c.setFont('Helvetica-Bold', 18)
-        c.drawString(72, height - 72, 'PepperQC Analysis Report')
+    # Modern color palette
+    colors = {
+        'primary': '#2563eb',     # Blue
+        'secondary': '#64748b',   # Slate gray
+        'success': '#059669',     # Green
+        'warning': '#d97706',     # Orange
+        'danger': '#dc2626',      # Red
+        'light_bg': '#f8fafc',    # Light blue-gray
+        'border': '#e2e8f0',      # Light border
+        'text_primary': '#1e293b', # Dark slate
+        'text_secondary': '#64748b' # Medium slate
+    }
+
+    def hex_to_rgb(hex_color):
+        """Convert hex color to RGB tuple (0-1 scale)"""
+        hex_color = hex_color.lstrip('#')
+        return tuple(int(hex_color[i:i+2], 16)/255.0 for i in (0, 2, 4))
+
+    def draw_header():
+        # Header background
+        c.setFillColor(hex_to_rgb(colors['primary']))
+        c.rect(0, height - 100, width, 100, fill=1, stroke=0)
+
+        # White text for header
+        c.setFillColor((1, 1, 1))  # White
+        c.setFont('Helvetica-Bold', 24)
+        c.drawString(40, height - 45, 'PepperQC')
+
+        c.setFont('Helvetica', 14)
+        c.drawString(40, height - 65, 'Quality Control Analysis Report')
+
+        # Timestamp in top right
         c.setFont('Helvetica', 10)
-        c.drawString(72, height - 90, f"Generated: {datetime.utcnow().isoformat()}Z")
+        timestamp = datetime.utcnow().strftime('%B %d, %Y at %H:%M UTC')
+        c.drawRightString(width - 40, height - 35, f"Generated: {timestamp}")
+
+    def draw_info_card(x, y, width_card, title, content_items, bg_color='#ffffff'):
+        """Draw a modern info card with title and content"""
+        card_height = 20 + len(content_items) * 16 + 20  # padding + content + padding
+
+        # Card background
+        c.setFillColor(hex_to_rgb(bg_color))
+        c.setStrokeColor(hex_to_rgb(colors['border']))
+        c.rect(x, y - card_height, width_card, card_height, fill=1, stroke=1)
+
+        # Title
+        c.setFillColor(hex_to_rgb(colors['text_primary']))
+        c.setFont('Helvetica-Bold', 12)
+        c.drawString(x + 12, y - 25, title)
+
+        # Content
+        c.setFillColor(hex_to_rgb(colors['text_secondary']))
+        c.setFont('Helvetica', 10)
+        content_y = y - 45
+        for item in content_items:
+            c.drawString(x + 12, content_y, item)
+            content_y -= 16
+
+        return card_height
+
+    def draw_summary_stats(x, y, width_card, severity_counts, total_issues):
+        """Draw modern stats cards for summary"""
+        card_width = (width_card - 20) / 3  # 3 cards with gaps
+        card_height = 80
+
+        stats = [
+            ('Total Issues', str(total_issues), colors['secondary']),
+            ('Critical', str(severity_counts.get('critical', 0)), colors['danger']),
+            ('Non-Critical', str(severity_counts.get('non_critical', 0)), colors['warning'])
+        ]
+
+        for i, (label, value, color) in enumerate(stats):
+            card_x = x + i * (card_width + 10)
+
+            # Card background
+            c.setFillColor((1, 1, 1))  # White
+            c.setStrokeColor(hex_to_rgb(colors['border']))
+            c.rect(card_x, y - card_height, card_width, card_height, fill=1, stroke=1)
+
+            # Colored top bar
+            c.setFillColor(hex_to_rgb(color))
+            c.rect(card_x, y - 8, card_width, 8, fill=1, stroke=0)
+
+            # Large number
+            c.setFillColor(hex_to_rgb(colors['text_primary']))
+            c.setFont('Helvetica-Bold', 20)
+            text_width = c.stringWidth(value, 'Helvetica-Bold', 20)
+            c.drawString(card_x + (card_width - text_width) / 2, y - 40, value)
+
+            # Label
+            c.setFont('Helvetica', 10)
+            c.setFillColor(hex_to_rgb(colors['text_secondary']))
+            label_width = c.stringWidth(label, 'Helvetica', 10)
+            c.drawString(card_x + (card_width - label_width) / 2, y - 60, label)
+
+        return card_height + 20
 
     from datetime import datetime
-    write_header()
-    y = height - 120
+    draw_header()
 
-    def write_line(text, font='Helvetica', size=11, gap=14):
-        nonlocal y
-        if y < 100:
-            c.showPage()
-            write_header()
-            y = height - 120
-        c.setFont(font, size)
-        c.drawString(72, y, text)
-        y -= gap
+    # Reset fill color for content
+    c.setFillColor(hex_to_rgb(colors['text_primary']))
 
-    write_line(f"Job ID: {job.id}")
-    write_line(f"Filename: {job.filename}")
-    write_line(f"Status: {job.status}")
+    current_y = height - 120
+
+    # Job Information Card
+    job_info = [
+        f"File: {job.filename}",
+        f"Job ID: {job.id}",
+        f"Status: {job.status}",
+        f"Created: {job.created_at.strftime('%B %d, %Y at %H:%M UTC')}",
+    ]
     if hasattr(job, 'preset') and job.preset:
-        write_line(f"Preset: {job.preset.name}")
-    write_line(f"Created: {job.created_at.isoformat()}Z")
-    write_line(' ')
+        job_info.append(f"Preset: {job.preset.name}")
 
+    card_height = draw_info_card(40, current_y, width - 80, "Job Information", job_info, colors['light_bg'])
+    current_y -= card_height + 30
+
+    # Summary Statistics
     severity_summary = analysis_result.get('severity_summary') if isinstance(analysis_result, dict) else {}
     severity_counts = severity_summary.get('counts', {}) if isinstance(severity_summary, dict) else {}
 
-    write_line('Summary', font='Helvetica-Bold', size=13, gap=18)
-    write_line(f"Total issues detected: {len(issues)}")
-    write_line(f"Critical issues: {severity_counts.get('critical', 0)}")
-    write_line(f"Non-critical issues: {severity_counts.get('non_critical', 0)}")
-    inf_count = severity_counts.get('informational', 0)
-    if inf_count:
-        write_line(f"Informational findings: {inf_count}")
-    write_line(' ')
+    c.setFillColor(hex_to_rgb(colors['text_primary']))
+    c.setFont('Helvetica-Bold', 16)
+    c.drawString(40, current_y, 'Analysis Summary')
+    current_y -= 30
 
-    target_image_width = 200
-    line_gap = 11
-    header_gap = 15
-    card_padding = 10
-    gutter = 24
-    col_width = (width - 144 - gutter) / 2
-    column_x_positions = [72, 72 + col_width + gutter]
-    column_y = [y, y]
-    spacing = 18
+    stats_height = draw_summary_stats(40, current_y, width - 80, severity_counts, len(issues))
+    current_y -= stats_height
 
-    def reset_columns_to_top():
-        column_y[0] = height - 120
-        column_y[1] = height - 120
-
-    for index, issue in enumerate(issues, start=1):
+    def draw_issue_card(x, y, width_card, issue, index, image_path=None, display_width=0, display_height=0):
+        """Draw a modern issue card with colored severity indicator"""
         event_label = issue.get('event', 'Issue')
         start_time = issue.get('start_time', 0)
         duration = issue.get('duration')
         severity = (issue.get('severity') or 'non_critical').replace('-', '_')
         severity_label = severity.replace('_', ' ').title()
 
+        # Choose severity color
+        severity_color = colors['warning']  # default
+        if severity == 'critical':
+            severity_color = colors['danger']
+        elif severity == 'non_critical':
+            severity_color = colors['warning']
+        elif severity == 'informational':
+            severity_color = colors['secondary']
+
         details = issue.get('details')
         detail_items = []
         if isinstance(details, dict):
             for key, value in details.items():
                 if value not in (None, ''):
-                    detail_items.append((key.replace('_', ' ').title(), value))
+                    detail_items.append((key.replace('_', ' ').title(), str(value)))
         elif details:
-            detail_items.append(('Details', details))
+            detail_items.append(('Details', str(details)))
 
-        image_path = None
-        display_width = display_height = 0
-        if video_path and os.path.exists(video_path):
-            issue_screenshot_dir = os.path.join(screenshot_root, job.id)
-            _ensure_directory(issue_screenshot_dir)
-            image_path = _capture_issue_screenshot(video_path, issue_screenshot_dir, job.id, index, start_time)
-            if image_path and os.path.exists(image_path):
-                try:
-                    img = ImageReader(image_path)
-                    img_width, img_height = img.getSize()
-                    scale = min(1, target_image_width / img_width)
-                    display_width = img_width * scale
-                    display_height = img_height * scale
-                except Exception as exc:  # pragma: no cover - best effort
-                    print(f"Failed to prepare screenshot {image_path}: {exc}")
-                    image_path = None
-                    display_width = display_height = 0
+        # Calculate card height - more compact
+        base_height = 60  # Header + basic info (reduced from 100)
+        details_height = len(detail_items) * 12  # Reduced from 16
+        image_height = display_height + 8 if image_path else 0  # Reduced spacing
+        card_height = base_height + details_height + image_height + 12  # Reduced padding
 
-        text_lines = 3 + len(detail_items) + (1 if duration else 0)
-        text_height = header_gap + text_lines * line_gap
-        image_section = display_height + (10 if display_height else 0)
-        card_height = text_height + image_section + card_padding * 2
+        # Card background
+        c.setFillColor((1, 1, 1))  # White
+        c.setStrokeColor(hex_to_rgb(colors['border']))
+        c.rect(x, y - card_height, width_card, card_height, fill=1, stroke=1)
 
-        column_index = None
-        for idx_col, col_y in enumerate(column_y):
-            if col_y - card_height >= 72:
-                column_index = idx_col
-                break
+        # Severity indicator (left border)
+        c.setFillColor(hex_to_rgb(severity_color))
+        c.rect(x, y - card_height, 4, card_height, fill=1, stroke=0)
 
-        if column_index is None:
-            c.showPage()
-            write_header()
-            reset_columns_to_top()
-            column_index = 0
+        # Issue title and number - more compact
+        c.setFillColor(hex_to_rgb(colors['text_primary']))
+        c.setFont('Helvetica-Bold', 12)  # Reduced from 14
+        c.drawString(x + 12, y - 20, f"#{index}")  # Reduced spacing
 
-        x = column_x_positions[column_index]
-        top_y = column_y[column_index]
-        y_cursor = top_y - card_padding
+        c.setFont('Helvetica-Bold', 11)  # Reduced from 12
+        c.drawString(x + 40, y - 20, event_label)  # Reduced spacing
 
-        c.setFont('Helvetica-Bold', 12)
-        c.drawString(x, y_cursor, f"Issue {index}: {event_label}")
-        y_cursor -= header_gap
-        c.setFont('Helvetica', 10)
-        c.drawString(x, y_cursor, f"Severity: {severity_label}")
-        y_cursor -= line_gap
-        c.drawString(x, y_cursor, f"Start: {start_time:.2f}s")
-        y_cursor -= line_gap
+        # Severity badge - smaller
+        badge_x = x + width_card - 75
+        badge_width = 65  # Reduced from 70
+        badge_height = 16  # Reduced from 18
+        c.setFillColor(hex_to_rgb(severity_color))
+        c.rect(badge_x, y - 19, badge_width, badge_height, fill=1, stroke=0)
+
+        c.setFillColor((1, 1, 1))  # White text
+        c.setFont('Helvetica-Bold', 7)  # Reduced from 8
+        text_width = c.stringWidth(severity_label.upper(), 'Helvetica-Bold', 7)
+        c.drawString(badge_x + (badge_width - text_width) / 2, y - 16, severity_label.upper())
+
+        # Timing information - more compact
+        c.setFillColor(hex_to_rgb(colors['text_secondary']))
+        c.setFont('Helvetica', 9)  # Reduced from 10
+        timing_text = f"Start: {start_time:.2f}s"
         if duration:
-            c.drawString(x, y_cursor, f"Duration: {duration:.2f}s")
-            y_cursor -= line_gap
-        for label, value in detail_items:
-            c.drawString(x, y_cursor, f"{label}: {value}")
-            y_cursor -= line_gap
+            timing_text += f" • Duration: {duration:.2f}s"
+        c.drawString(x + 12, y - 35, timing_text)  # Reduced spacing
 
-        if image_path:
-            img_bottom = y_cursor - display_height
-            c.drawImage(image_path, x, img_bottom, width=display_width, height=display_height)
-            y_cursor = img_bottom - 10
+        # Details section - more compact
+        current_y = y - 48  # Reduced from 65
+        if detail_items:
+            c.setFont('Helvetica-Bold', 9)  # Reduced from 10
+            c.setFillColor(hex_to_rgb(colors['text_primary']))
+            c.drawString(x + 12, current_y, "Details:")  # Reduced margin
+            current_y -= 14  # Reduced from 18
 
-        column_y[column_index] = top_y - card_height - spacing
+            c.setFont('Helvetica', 8)  # Reduced from 9
+            c.setFillColor(hex_to_rgb(colors['text_secondary']))
+            for label, value in detail_items:
+                detail_text = f"• {label}: {value}"
+                # Wrap long text if needed
+                if len(detail_text) > 85:
+                    detail_text = detail_text[:82] + "..."
+                c.drawString(x + 20, current_y, detail_text)  # Reduced margin
+                current_y -= 12  # Reduced from 16
 
-    if not issues:
-        write_line('No issues detected.', font='Helvetica-Oblique', size=12)
+        # Screenshot if available
+        if image_path and display_width and display_height:
+            # Add some spacing - reduced
+            current_y -= 6  # Reduced from 10
+            # Center the image
+            img_x = x + (width_card - display_width) / 2
+            c.drawImage(image_path, img_x, current_y - display_height, width=display_width, height=display_height)
+            current_y -= display_height
+
+        return card_height
+
+    # Issues section
+    if issues:
+        # Check if we need a new page
+        if current_y < 200:  # Not enough space for issues section
+            c.showPage()
+            draw_header()
+            current_y = height - 120
+
+        c.setFillColor(hex_to_rgb(colors['text_primary']))
+        c.setFont('Helvetica-Bold', 16)
+        c.drawString(40, current_y, f'Issues Detected ({len(issues)})')
+        current_y -= 40
+
+        for index, issue in enumerate(issues, start=1):
+            # Prepare screenshot if available
+            image_path = None
+            display_width = display_height = 0
+            if video_path and os.path.exists(video_path):
+                issue_screenshot_dir = os.path.join(screenshot_root, job.id)
+                _ensure_directory(issue_screenshot_dir)
+                image_path = _capture_issue_screenshot(video_path, issue_screenshot_dir, job.id, index, issue.get('start_time', 0))
+                if image_path and os.path.exists(image_path):
+                    try:
+                        img = ImageReader(image_path)
+                        img_width, img_height = img.getSize()
+                        scale = min(1, 160 / img_width)  # Smaller images for more compact layout
+                        display_width = img_width * scale
+                        display_height = img_height * scale
+                    except Exception as exc:  # pragma: no cover - best effort
+                        print(f"Failed to prepare screenshot {image_path}: {exc}")
+                        image_path = None
+                        display_width = display_height = 0
+
+            # Pre-calculate card height to check if it fits
+            details = issue.get('details')
+            detail_items = []
+            if isinstance(details, dict):
+                for key, value in details.items():
+                    if value not in (None, ''):
+                        detail_items.append((key.replace('_', ' ').title(), str(value)))
+            elif details:
+                detail_items.append(('Details', str(details)))
+
+            base_height = 60
+            details_height = len(detail_items) * 12
+            image_height = display_height + 8 if image_path else 0
+            estimated_card_height = base_height + details_height + image_height + 12
+
+            # Check if we need a new page BEFORE drawing
+            if current_y - estimated_card_height < 80:  # Need more margin to prevent breaking
+                c.showPage()
+                draw_header()
+                current_y = height - 120
+
+            # Now draw the issue card (guaranteed to fit on current page)
+            actual_card_height = draw_issue_card(40, current_y, width - 80, issue, index, image_path, display_width, display_height)
+            current_y -= actual_card_height + 15  # Reduced spacing between cards from 20 to 15
+    else:
+        # No issues message
+        if current_y < 100:
+            c.showPage()
+            draw_header()
+            current_y = height - 120
+
+        c.setFillColor(hex_to_rgb(colors['text_primary']))
+        c.setFont('Helvetica-Bold', 16)
+        c.drawString(40, current_y, 'Issues Detected')
+        current_y -= 40
+
+        # Success message card
+        success_height = draw_info_card(40, current_y, width - 80, "✓ All Clear", ["No issues detected in this media file."], colors['light_bg'])
+        current_y -= success_height
 
     c.showPage()
     c.save()
