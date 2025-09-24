@@ -35,12 +35,12 @@ POSTGRES_USER=pepper
 POSTGRES_PASSWORD=pepper
 POSTGRES_DB=pepperqc
 DATABASE_URL=postgresql+psycopg2://pepper:pepper@db:5432/pepperqc
-TELEGRAM_BOT_TOKEN=123456789:ABCDEF...
 # Optional overrides
+# TELEGRAM_BOT_TOKEN=123456789:ABCDEF...
 # TELEGRAM_API_BASE=https://your-proxy.example.com
 ```
 
-> **Note:** The Telegram bot token is environment-only. Generate it via Telegram’s `@BotFather`, add it to `.env`, and restart the backend + worker containers.
+> **Note:** You can provide `TELEGRAM_BOT_TOKEN` via environment variables for headless deployments. If you leave it unset, administrators can store the token securely through the Telegram settings page once PepperQC is running.
 
 ## Getting Started
 
@@ -59,8 +59,9 @@ Hot reloading is enabled for both backend (Gunicorn `--reload`) and Celery (`--a
 ### Managing Telegram Recipients
 
 1. Navigate to **Telegram** in the top navigation.
-2. Add users or groups by their numeric chat ID (users must message the bot first; groups must invite the bot).
-3. Use **Send Test Message** to verify delivery; success updates the “Last Tested” timestamp.
+2. Paste the bot token (issued by Telegram’s `@BotFather`) and click **Save Token**. The token is stored in the database and can be updated or removed at any time from this screen.
+3. Add users or groups by their numeric chat ID (users must message the bot first; groups must invite the bot).
+4. Use **Send Test Message** to verify delivery; success updates the “Last Tested” timestamp.
 
 Runtime behavior:
 
@@ -128,4 +129,3 @@ README.md
 ## License
 
 The repository bundles third-party projects (QCTools uses GPL; see `QCTools/License.html`). Core PepperQC source currently carries no explicit license—add one before distribution if required.
-
