@@ -8,6 +8,7 @@ PepperQC is a media quality-control platform that automates video analysis, gene
 - [Architecture](#architecture)
 - [System Requirements](#system-requirements)
 - [Quick Start](#quick-start)
+- [Automated Scripts](#automated-installation-scripts)
 - [Installation](#installation)
   - [Windows](#-windows-1011)
   - [Linux](#-linux-ubuntudebiancentosrhel)
@@ -59,11 +60,38 @@ PepperQC is a media quality-control platform that automates video analysis, gene
 
 ## Quick Start
 
-**Already have Docker installed?** Get PepperQC running in under 5 minutes:
+### 🚀 Automated Installation (Recommended)
+
+**Already have Docker and Git installed?** Use our automated installation scripts:
+
+```bash
+# Clone and run universal installer
+git clone https://github.com/alonraif/pepperqc.git
+cd pepperqc/scripts
+./install.sh
+
+# Windows users:
+# PowerShell -ExecutionPolicy Bypass -File install-windows.ps1
+```
+
+The script will automatically:
+- ✅ Verify prerequisites
+- ✅ Clone repository and configure environment
+- ✅ Build and start all services
+- ✅ Create shortcuts and aliases
+- ✅ Open PepperQC in your browser
+
+**Access at:** http://localhost:3000
+
+---
+
+### ⚡ Manual Quick Start
+
+**Prefer manual setup?** Get PepperQC running in under 5 minutes:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/pepperqc.git
+git clone https://github.com/alonraif/pepperqc.git
 cd pepperqc
 
 # Create environment file
@@ -81,6 +109,74 @@ docker-compose up --build
 ```
 
 **Need to install Docker?** Follow the detailed installation guide below.
+
+---
+
+## Automated Installation Scripts
+
+For the fastest and most reliable installation experience, use our automated scripts that handle all setup steps after Docker and Git are installed.
+
+### 📁 Script Files
+- **`scripts/install.sh`** - Universal installer (detects macOS/Linux)
+- **`scripts/install-windows.ps1`** - Windows PowerShell script
+- **`scripts/install-linux.sh`** - Linux bash script
+- **`scripts/install-macos.sh`** - macOS bash script
+
+### 🚀 Usage
+
+**Universal (macOS/Linux):**
+```bash
+git clone https://github.com/alonraif/pepperqc.git
+cd pepperqc/scripts
+./install.sh [options]
+```
+
+**Windows (PowerShell as Administrator):**
+```powershell
+git clone https://github.com/alonraif/pepperqc.git
+cd pepperqc/scripts
+PowerShell -ExecutionPolicy Bypass -File install-windows.ps1 [options]
+```
+
+### ⚙️ Script Options
+
+All scripts support these optional parameters:
+
+- **Telegram Token**: Automatically configure Telegram notifications
+- **SSL Domain**: Set up HTTPS with Let's Encrypt
+- **SSL Email**: Email for certificate notifications
+- **Installation Path**: Custom directory (Linux/macOS only)
+
+**Examples:**
+```bash
+# Basic installation
+./install.sh
+
+# With Telegram and SSL
+./install.sh --telegram-token "123456:ABC..." --domain "pepperqc.example.com" --email "admin@example.com"
+
+# Windows equivalent
+install-windows.ps1 -TelegramToken "123456:ABC..." -Domain "pepperqc.example.com" -Email "admin@example.com"
+```
+
+### ✨ What the Scripts Do
+
+1. **✅ Prerequisites Check** - Verify Docker, Git, and system requirements
+2. **📁 Repository Setup** - Clone code and create installation directory
+3. **⚙️ Configuration** - Generate `.env` file with optimal settings
+4. **🏗️ Build & Deploy** - Build containers and start all services
+5. **🔗 Integration** - Create shortcuts, aliases, and desktop entries
+6. **🎯 Verification** - Test installation and provide next steps
+
+### 🎁 Additional Features
+
+- **Desktop Shortcuts**: Quick access from desktop/dock
+- **Shell Aliases**: `pepperqc-start`, `pepperqc-stop`, `pepperqc-logs`, `pepperqc-update`
+- **Auto Browser**: Optionally opens PepperQC after installation
+- **Error Recovery**: Comprehensive error handling and rollback
+- **Progress Display**: Colorized output with status indicators
+
+📖 **Detailed script documentation:** [`scripts/README.md`](scripts/README.md)
 
 ---
 
