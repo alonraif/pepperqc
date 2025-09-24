@@ -32,10 +32,12 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   createRecipient,
   deleteRecipient,
+  deleteTelegramToken,
   fetchTelegramStatus,
   listRecipients,
   sendTestMessage,
   updateRecipient,
+  updateTelegramToken,
 } from './api/telegramApi';
 
 const emptyForm = {
@@ -48,6 +50,9 @@ const emptyForm = {
 const TelegramSettings = () => {
   const [status, setStatus] = useState(null);
   const [statusLoading, setStatusLoading] = useState(true);
+  const [tokenValue, setTokenValue] = useState('');
+  const [tokenError, setTokenError] = useState(null);
+  const [tokenSaving, setTokenSaving] = useState(false);
   const [recipients, setRecipients] = useState([]);
   const [loadingRecipients, setLoadingRecipients] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -178,6 +183,54 @@ const TelegramSettings = () => {
     }
   };
 
+  const tokenManagedByEnv = status?.token_source === 'environment';
+  const canRemoveStoredToken = status?.token_source === 'database';
+
+  const handleTokenSave = async (event) => {
+    event?.preventDefault();
+    if (!tokenValue.trim()) {
+      setTokenError('Enter the bot token.');
+      return;
+    }
+    try {
+      setTokenSaving(true);
+      setTokenError(null);
+      await updateTelegramToken(tokenValue.trim());
+      setTokenValue('');
+      refreshStatus();
+    } catch (error) {
+      const message = error.response?.data?.error || 'Unable to update Telegram bot token.';
+      setTokenError(message);
+    } finally {
+      setTokenSaving(false);
+    }
+  };
+
+  const handleTokenClear = async () => {
+    try {
+      setTokenSaving(true);
+      setTokenError(null);
+      await deleteTelegramToken();
+      setTokenValue('');
+      refreshStatus();
+    } catch (error) {
+      const message = error.response?.data?.error || 'Unable to remove Telegram bot token.';
+      setTokenError(message);
+    } finally {
+      setTokenSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (statusLoading) {
+      return;
+    }
+    setTokenError(null);
+    if (tokenManagedByEnv) {
+      setTokenValue('');
+    }
+  }, [statusLoading, tokenManagedByEnv]);
+
   const statusContent = useMemo(() => {
     if (statusLoading) {
       return <CircularProgress size={18} />;
@@ -189,13 +242,20 @@ const TelegramSettings = () => {
     if (!status.configured) {
       return (
         <Alert severity="warning" sx={{ width: '100%' }}>
-          Telegram bot token missing. Add <code>TELEGRAM_BOT_TOKEN</code> to the backend environment to enable messaging.
+          Telegram bot token missing. Provide the token below to enable notifications.
         </Alert>
       );
     }
+
+    const tokenInfo = status.token_source === 'environment'
+      ? 'Token provided via environment variable.'
+      : status.token_source === 'database'
+        ? `Token stored in database${status.token_last_updated_at ? ` (updated ${new Date(status.token_last_updated_at).toLocaleString()})` : ''}.`
+        : 'Token source unknown.';
+
     return (
       <Alert severity="success" sx={{ width: '100%' }}>
-        Bot connected. {status.recipient_count} recipient{status.recipient_count === 1 ? '' : 's'} configured. Last test: {lastTest}.
+        Bot connected. {status.recipient_count} recipient{status.recipient_count === 1 ? '' : 's'} configured. Last test: {lastTest}. {tokenInfo}
       </Alert>
     );
   }, [status, statusLoading]);
@@ -215,6 +275,70 @@ const TelegramSettings = () => {
           </Button>
         </Stack>
       </Stack>
+
+      <Card variant="outlined" component="form" onSubmit={handleTokenSave}>
+        <CardContent>
+          {statusLoading && !status ? (
+            <Box sx={{ display: 'grid', placeItems: 'center', py: 4 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Bot Configuration
+              </Typography>
+              {tokenManagedByEnv ? (
+                <Alert severity="info">
+                  Token is supplied via the backend environment. Update the `TELEGRAM_BOT_TOKEN` variable on the server to change it.
+                </Alert>
+              ) : null}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+              >
+                <TextField
+                  type="password"
+                  label="Bot token"
+                  placeholder="123456789:ABC..."
+                  value={tokenValue}
+                  onChange={(event) => setTokenValue(event.target.value)}
+                  disabled={tokenManagedByEnv || tokenSaving}
+                  fullWidth
+                  autoComplete="off"
+                  helperText={tokenManagedByEnv ? 'Managed via environment variable.' : 'Paste the token provided by @BotFather.'}
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={tokenManagedByEnv || tokenSaving || !tokenValue.trim()}
+                >
+                  {tokenSaving ? <CircularProgress size={18} /> : 'Save Token'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={handleTokenClear}
+                  disabled={tokenManagedByEnv || tokenSaving || !canRemoveStoredToken}
+                >
+                  Remove Token
+                </Button>
+              </Stack>
+              {tokenError ? <Alert severity="error">{tokenError}</Alert> : null}
+              {status?.token_source === 'database' && status.token_last_updated_at ? (
+                <Typography variant="body2" color="text.secondary">
+                  Last updated {new Date(status.token_last_updated_at).toLocaleString()}.
+                </Typography>
+              ) : null}
+              {status?.token_source === 'unset' ? (
+                <Typography variant="body2" color="text.secondary">
+                  Store the bot token to enable Telegram notifications.
+                </Typography>
+              ) : null}
+            </Stack>
+          )}
+        </CardContent>
+      </Card>
 
       <Card variant="outlined">
         <CardContent>

@@ -4,7 +4,9 @@ from typing import Optional
 import requests
 
 
-def _get_bot_token() -> Optional[str]:
+def _resolve_token(token: Optional[str] = None) -> Optional[str]:
+    if token:
+        return token
     return os.environ.get('TELEGRAM_BOT_TOKEN')
 
 
@@ -13,19 +15,19 @@ def _api_base() -> str:
     return base.rstrip('/')
 
 
-def _build_url(method: str) -> Optional[str]:
-    token = _get_bot_token()
+def _build_url(method: str, token: Optional[str] = None) -> Optional[str]:
+    token = _resolve_token(token)
     if not token:
         return None
     return f"{_api_base()}/bot{token}/{method}"
 
 
-def is_configured() -> bool:
-    return bool(_get_bot_token())
+def is_configured(token: Optional[str] = None) -> bool:
+    return bool(_resolve_token(token))
 
 
-def send_message(chat_id: str, text: str, parse_mode: Optional[str] = None, disable_notification: bool = False) -> bool:
-    url = _build_url('sendMessage')
+def send_message(chat_id: str, text: str, parse_mode: Optional[str] = None, disable_notification: bool = False, token: Optional[str] = None) -> bool:
+    url = _build_url('sendMessage', token)
     if not url:
         return False
 
@@ -48,8 +50,8 @@ def send_message(chat_id: str, text: str, parse_mode: Optional[str] = None, disa
     return False
 
 
-def send_document(chat_id: str, file_path: str, caption: Optional[str] = None, parse_mode: Optional[str] = None, disable_notification: bool = False) -> bool:
-    url = _build_url('sendDocument')
+def send_document(chat_id: str, file_path: str, caption: Optional[str] = None, parse_mode: Optional[str] = None, disable_notification: bool = False, token: Optional[str] = None) -> bool:
+    url = _build_url('sendDocument', token)
     if not url:
         return False
 

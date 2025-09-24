@@ -33,7 +33,6 @@ services:
       - DATABASE_URL=${DATABASE_URL} # Read from .env
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - TELEGRAM_BOT_TOKEN=8290318832:AAGo5E-EP0UVwyNiERy0LTp3F8LevUbhGQs
       - PYTHONPATH=/app
     depends_on:
       - db-init
@@ -53,7 +52,6 @@ services:
       - DATABASE_URL=${DATABASE_URL} # Read from .env
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - TELEGRAM_BOT_TOKEN=8290318832:AAGo5E-EP0UVwyNiERy0LTp3F8LevUbhGQs
       - PYTHONPATH=/app
     depends_on:
       - db-init

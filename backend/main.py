@@ -98,6 +98,13 @@ class TelegramRecipient(db.Model):
         }
 
 
+class TelegramConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bot_token = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 def _extract_issue_count(result_blob):
     if not result_blob:
         return 0
@@ -172,8 +179,85 @@ def _build_failure_message(job, error_message):
     return '\n'.join(base_lines)
 
 
+def _env_telegram_token():
+    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    return token.strip() if isinstance(token, str) and token.strip() else None
+
+
+def _get_telegram_config(create_if_missing: bool = False):
+    config = TelegramConfig.query.get(1)
+    if not config and create_if_missing:
+        config = TelegramConfig(id=1)
+        db.session.add(config)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+    return config
+
+
+def get_telegram_bot_token():
+    env_token = _env_telegram_token()
+    if env_token:
+        return env_token
+    config = _get_telegram_config()
+    return (config.bot_token or '').strip() if config and config.bot_token else None
+
+
+def get_telegram_token_status():
+    env_token = _env_telegram_token()
+    if env_token:
+        return {
+            'configured': True,
+            'source': 'environment',
+            'last_updated_at': None,
+        }
+
+    config = _get_telegram_config()
+    if config and config.bot_token:
+        return {
+            'configured': True,
+            'source': 'database',
+            'last_updated_at': config.updated_at.isoformat() if config.updated_at else None,
+        }
+
+    return {'configured': False, 'source': 'unset', 'last_updated_at': None}
+
+
+def set_telegram_bot_token(token: str):
+    cleaned = (token or '').strip()
+    if not cleaned:
+        raise ValueError('Telegram bot token is required.')
+
+    config = _get_telegram_config(create_if_missing=True)
+    config.bot_token = cleaned
+    config.updated_at = datetime.utcnow()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    return config
+
+
+def clear_telegram_bot_token():
+    config = _get_telegram_config()
+    if not config or not config.bot_token:
+        return config
+    config.bot_token = None
+    config.updated_at = datetime.utcnow()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    return config
+
+
 def _send_notifications(text, attachment_path=None, attachment_caption=None):
-    if not telegram_is_configured():
+    token = get_telegram_bot_token()
+    if not telegram_is_configured(token):
         return
 
     recipients = _enabled_telegram_recipients()
@@ -181,9 +265,9 @@ def _send_notifications(text, attachment_path=None, attachment_caption=None):
         return
 
     for recipient in recipients:
-        ok = telegram_send_message(recipient.chat_id, text)
+        ok = telegram_send_message(recipient.chat_id, text, token=token)
         if attachment_path and ok:
-            telegram_send_document(recipient.chat_id, attachment_path, caption=attachment_caption)
+            telegram_send_document(recipient.chat_id, attachment_path, caption=attachment_caption, token=token)
 
 
 def cleanup_expired_jobs(max_age_days: int = 7):
@@ -525,14 +609,62 @@ def delete_job(job_id):
 
 
 # --- Telegram Integration ---
+@app.route('/api/telegram/token', methods=['GET'])
+def telegram_token_details():
+    status = get_telegram_token_status()
+    status['configured'] = telegram_is_configured(get_telegram_bot_token())
+    return jsonify(status), 200
+
+
+@app.route('/api/telegram/token', methods=['POST'])
+def update_telegram_token():
+    if _env_telegram_token():
+        return jsonify({'error': 'Telegram bot token is managed via environment variable. Unset TELEGRAM_BOT_TOKEN to manage it from the UI.'}), 409
+
+    data = request.get_json() or {}
+    token = (data.get('bot_token') or '').strip()
+    if not token:
+        return jsonify({'error': 'Telegram bot token is required.'}), 400
+
+    try:
+        set_telegram_bot_token(token)
+        status = get_telegram_token_status()
+        status['configured'] = telegram_is_configured(get_telegram_bot_token())
+        return jsonify(status), 200
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update Telegram bot token.'}), 500
+
+
+@app.route('/api/telegram/token', methods=['DELETE'])
+def delete_telegram_token():
+    if _env_telegram_token():
+        return jsonify({'error': 'Telegram bot token is managed via environment variable. Unset TELEGRAM_BOT_TOKEN to manage it from the UI.'}), 409
+
+    try:
+        clear_telegram_bot_token()
+        status = get_telegram_token_status()
+        status['configured'] = telegram_is_configured(get_telegram_bot_token())
+        return jsonify(status), 200
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to remove Telegram bot token.'}), 500
+
+
 @app.route('/api/telegram/status', methods=['GET'])
 def telegram_status():
     recipients_total = TelegramRecipient.query.count()
     latest_test = db.session.query(func.max(TelegramRecipient.last_tested_at)).scalar()
+    token_status = get_telegram_token_status()
+    configured = telegram_is_configured(get_telegram_bot_token())
     return jsonify({
-        'configured': telegram_is_configured(),
+        'configured': configured,
         'recipient_count': recipients_total,
         'last_tested_at': latest_test.isoformat() if latest_test else None,
+        'token_source': token_status['source'],
+        'token_last_updated_at': token_status['last_updated_at'],
     })
 
 
@@ -620,7 +752,8 @@ def test_telegram_recipient(recipient_id):
     if not recipient:
         return jsonify({'error': 'Recipient not found.'}), 404
 
-    if not telegram_is_configured():
+    token = get_telegram_bot_token()
+    if not telegram_is_configured(token):
         return jsonify({'error': 'Telegram bot token is not configured.'}), 400
 
     message = (
@@ -628,7 +761,7 @@ def test_telegram_recipient(recipient_id):
         f'Target: {recipient.display_name}\n'
         f'Sent at: {_format_timestamp(datetime.utcnow())}'
     )
-    success = telegram_send_message(recipient.chat_id, message)
+    success = telegram_send_message(recipient.chat_id, message, token=token)
     if success:
         recipient.last_tested_at = datetime.utcnow()
         db.session.commit()

@@ -1,7 +1,7 @@
 import time
 from sqlalchemy.exc import OperationalError
 # --- THE FIX: We now also import the Preset model ---
-from main import app, db, Preset, TelegramRecipient
+from main import app, db, Preset, TelegramRecipient, TelegramConfig
 from utils import get_default_qctools_preset
 
 print("DB Initializer: Waiting for database to be ready...")
@@ -9,8 +9,18 @@ retries = 5
 while retries > 0:
     try:
         with app.app_context():
-            # Step 1: Create all tables (Job, Preset)
+            # Step 1: Create all tables (Job, Preset, Telegram tables)
             db.create_all()
+
+            # Ensure Telegram config row exists to avoid race conditions when storing later.
+            if not TelegramConfig.query.get(1):
+                config = TelegramConfig(id=1)
+                db.session.add(config)
+                try:
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    raise
 
             # --- THE FIX: Seeding logic ---
             # Step 2: Check if a 'Default' preset already exists.

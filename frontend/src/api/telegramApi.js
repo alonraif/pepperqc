@@ -5,6 +5,16 @@ export const fetchTelegramStatus = async () => {
   return response.data;
 };
 
+export const updateTelegramToken = async (botToken) => {
+  const response = await apiClient.post(buildApiUrl('/api/telegram/token'), { bot_token: botToken });
+  return response.data;
+};
+
+export const deleteTelegramToken = async () => {
+  const response = await apiClient.delete(buildApiUrl('/api/telegram/token'));
+  return response.data;
+};
+
 export const listRecipients = async () => {
   const response = await apiClient.get(buildApiUrl('/api/telegram/recipients'));
   return response.data;
