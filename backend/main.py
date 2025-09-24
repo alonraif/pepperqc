@@ -303,6 +303,12 @@ def _write_caddyfile(contents: str) -> None:
         return
     target = Path(target_path)
     target.parent.mkdir(parents=True, exist_ok=True)
+
+    # Also ensure caddy storage directory exists
+    storage_path = os.environ.get('CADDY_STORAGE_PATH')
+    if storage_path:
+        Path(storage_path).mkdir(parents=True, exist_ok=True)
+
     target.write_text(contents, encoding='utf-8')
 
 
@@ -1047,3 +1053,128 @@ def update_preset(preset_id):
         preset.is_default = False
     db.session.commit()
     return jsonify({'id': preset.id, 'name': preset.name, 'is_default': preset.is_default}), 200
+
+
+# --- Unified System Configuration API ---
+
+@app.route('/api/system/config', methods=['GET'])
+def get_system_configuration():
+    """Get all system configuration settings in one unified response"""
+    try:
+        # SSL/Domain configuration
+        domain_settings = get_domain_settings()
+        hostname = domain_settings.get('hostname', '')
+        ssl_config = {
+            'hostname': hostname,
+            'email': domain_settings.get('lets_encrypt_email', ''),
+            'certificate_status': get_certificate_status(hostname) if hostname else None
+        }
+
+        # Telegram configuration
+        telegram_config = _compose_telegram_settings()
+
+        # System information
+        system_info = {
+            'version': '1.0.0',  # You can make this dynamic
+            'environment': os.environ.get('FLASK_ENV', 'production'),
+        }
+
+        return jsonify({
+            'ssl': ssl_config,
+            'telegram': telegram_config,
+            'system': system_info
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to load configuration: {str(e)}'}), 500
+
+
+@app.route('/api/system/config/ssl', methods=['PUT'])
+def update_ssl_configuration():
+    """Update SSL/Domain configuration and apply changes"""
+    data = request.get_json() or {}
+    hostname = data.get('hostname', '').strip()
+    email = data.get('email', '').strip()
+
+    # Validate hostname
+    if hostname and not _is_valid_hostname(hostname):
+        return jsonify({'error': 'Invalid hostname format'}), 400
+
+    # Validate email
+    if hostname and not email:
+        return jsonify({'error': 'Email is required for SSL certificate generation'}), 400
+
+    if email and '@' not in email:
+        return jsonify({'error': 'Invalid email format'}), 400
+
+    try:
+        # Save to database
+        _set_system_config_value('domain.hostname', hostname)
+        _set_system_config_value('domain.lets_encrypt_email', email)
+
+        # Apply configuration immediately
+        if hostname:
+            apply_reverse_proxy_configuration(hostname, email)
+            certificate_status = get_certificate_status(hostname)
+        else:
+            # Disable SSL by applying HTTP-only configuration
+            apply_reverse_proxy_configuration('', '')
+            certificate_status = None
+
+        return jsonify({
+            'success': True,
+            'hostname': hostname,
+            'email': email,
+            'certificate_status': certificate_status,
+            'message': 'SSL configuration updated successfully' if hostname else 'SSL disabled successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to apply SSL configuration: {str(e)}'}), 500
+
+
+@app.route('/api/system/config/ssl/status', methods=['GET'])
+def get_ssl_status():
+    """Get current SSL certificate status"""
+    domain_settings = get_domain_settings()
+    hostname = domain_settings.get('hostname', '')
+
+    if not hostname:
+        return jsonify({'enabled': False, 'certificate_status': None})
+
+    try:
+        certificate_status = get_certificate_status(hostname)
+        return jsonify({
+            'enabled': True,
+            'hostname': hostname,
+            'email': domain_settings.get('lets_encrypt_email', ''),
+            'certificate_status': certificate_status
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to get SSL status: {str(e)}'}), 500
+
+
+@app.route('/api/system/config/ssl/renew', methods=['POST'])
+def renew_ssl_certificate():
+    """Force SSL certificate renewal"""
+    domain_settings = get_domain_settings()
+    hostname = domain_settings.get('hostname', '')
+    email = domain_settings.get('lets_encrypt_email', '')
+
+    if not hostname or not email:
+        return jsonify({'error': 'SSL not configured'}), 400
+
+    try:
+        # Force renewal by reapplying configuration
+        apply_reverse_proxy_configuration(hostname, email)
+
+        # Give it a moment to process, then check status
+        import time
+        time.sleep(2)
+
+        certificate_status = get_certificate_status(hostname)
+        return jsonify({
+            'success': True,
+            'certificate_status': certificate_status,
+            'message': 'SSL certificate renewal initiated'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to renew certificate: {str(e)}'}), 500
