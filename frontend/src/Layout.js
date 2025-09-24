@@ -16,7 +16,6 @@ import DashboardIcon from '@mui/icons-material/Speed';
 import TuneIcon from '@mui/icons-material/Tune';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import TelegramIcon from '@mui/icons-material/Telegram';
 import SettingsIcon from '@mui/icons-material/Settings';
 
 import ColorModeContext from './theme/ColorModeContext';
@@ -24,7 +23,6 @@ import ColorModeContext from './theme/ColorModeContext';
 const navItems = [
   { label: 'Overview', to: '/', icon: <DashboardIcon fontSize="small" /> },
   { label: 'Presets', to: '/presets', icon: <TuneIcon fontSize="small" /> },
-  { label: 'Telegram', to: '/telegram', icon: <TelegramIcon fontSize="small" /> },
   { label: 'Settings', to: '/settings', icon: <SettingsIcon fontSize="small" /> },
 ];
 
