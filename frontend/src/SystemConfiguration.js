@@ -7,7 +7,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Divider,
   FormControlLabel,
   Grid,
   IconButton,
@@ -158,13 +157,25 @@ const SystemConfiguration = () => {
   const certStatusInfo = config?.ssl?.certificate_status ? getCertificateStatusInfo(config.ssl.certificate_status) : null;
 
   return (
-    <Box sx={{ maxWidth: 1200, margin: '0 auto', p: 3 }}>
+    <Box sx={{ maxWidth: 1200, margin: '0 auto', p: { xs: 1, sm: 2, md: 3 } }}>
       {/* Page Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: 'text.primary',
+            mb: 1,
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+          }}
+        >
           Settings
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+        >
           Configure your PepperQC instance, SSL certificates, and notification settings
         </Typography>
       </Box>
@@ -182,18 +193,26 @@ const SystemConfiguration = () => {
         </Alert>
       )}
 
-      <Stack spacing={4}>
+      <Stack spacing={{ xs: 3, sm: 4 }}>
         {/* Analysis Configuration Section */}
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 600,
+              mb: { xs: 2, sm: 3 },
+              color: 'text.primary',
+              fontSize: { xs: '1.25rem', sm: '1.5rem' }
+            }}
+          >
             Analysis Configuration
           </Typography>
 
           <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Grid container spacing={3} alignItems="center">
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
                 <Grid item xs={12} md={8}>
-                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }} sx={{ mb: 1 }}>
                     <TuneIcon color="primary" />
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
                       QC Analysis Presets
@@ -203,13 +222,14 @@ const SystemConfiguration = () => {
                     Configure quality control tests, thresholds, and severity levels for media analysis
                   </Typography>
                 </Grid>
-                <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'center', sm: 'left', md: 'right' }, mt: { xs: 2, md: 0 } }}>
                   <Button
                     variant="contained"
                     component="a"
                     href="#/presets"
                     startIcon={<TuneIcon />}
                     size="large"
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
                     Manage Presets
                   </Button>
@@ -221,14 +241,28 @@ const SystemConfiguration = () => {
 
         {/* Security & Access Section */}
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 600,
+              mb: { xs: 2, sm: 3 },
+              color: 'text.primary',
+              fontSize: { xs: '1.25rem', sm: '1.5rem' }
+            }}
+          >
             Security & Access
           </Typography>
 
           <Card>
-            <CardContent sx={{ p: 4 }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 4 }}>
-                <Stack direction="row" alignItems="center" spacing={2}>
+            <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                justifyContent="space-between"
+                spacing={{ xs: 2, sm: 0 }}
+                sx={{ mb: { xs: 3, sm: 4 } }}
+              >
+                <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }}>
                   <SecurityIcon color="primary" fontSize="large" />
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -264,8 +298,13 @@ const SystemConfiguration = () => {
               />
 
               {sslEnabled && (
-                <Box sx={{ pl: 4, borderLeft: 2, borderColor: 'primary.main', mb: 3 }}>
-                  <Grid container spacing={3}>
+                <Box sx={{
+                  pl: { xs: 2, sm: 3, md: 4 },
+                  borderLeft: 2,
+                  borderColor: 'primary.main',
+                  mb: 3
+                }}>
+                  <Grid container spacing={{ xs: 2, sm: 3 }}>
                     <Grid item xs={12} md={6}>
                       <TextField
                         label="Domain Name"
@@ -316,13 +355,18 @@ const SystemConfiguration = () => {
                 </Box>
               )}
 
-              <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={{ xs: 1, sm: 2 }}
+                sx={{ mt: 3 }}
+              >
                 <Button
                   variant="contained"
                   size="large"
                   startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
                   onClick={handleSslSave}
                   disabled={saving || (sslEnabled && (!sslForm.hostname || !sslForm.email))}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
                 >
                   {sslEnabled ? 'Enable SSL' : 'Disable SSL'}
                 </Button>
@@ -334,6 +378,7 @@ const SystemConfiguration = () => {
                     startIcon={saving ? <CircularProgress size={20} /> : <RefreshIcon />}
                     onClick={handleSslRenew}
                     disabled={saving}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
                     Renew Certificate
                   </Button>
@@ -352,21 +397,29 @@ const SystemConfiguration = () => {
 
         {/* Notifications Section */}
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 600,
+              mb: { xs: 2, sm: 3 },
+              color: 'text.primary',
+              fontSize: { xs: '1.25rem', sm: '1.5rem' }
+            }}
+          >
             Notifications
           </Typography>
 
           <Card>
-            <CardContent>
-              <Grid container spacing={3} alignItems="center">
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Grid container spacing={{ xs: 2, sm: 3 }} alignItems="center">
                 <Grid item xs={12} md={8}>
-                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                  <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }} sx={{ mb: 2 }}>
                     <TelegramIcon color="primary" fontSize="large" />
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         Telegram Bot
                         {config?.telegram?.configured && (
-                          <Chip label="Active" color="success" size="small" sx={{ ml: 2 }} />
+                          <Chip label="Active" color="success" size="small" sx={{ ml: { xs: 1, sm: 2 } }} />
                         )}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -404,13 +457,14 @@ const SystemConfiguration = () => {
                     </Box>
                   )}
                 </Grid>
-                <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'center', sm: 'left', md: 'right' }, mt: { xs: 2, md: 0 } }}>
                   <Button
                     variant={config?.telegram?.configured ? "outlined" : "contained"}
                     component="a"
                     href="#/telegram-settings"
                     size="large"
                     startIcon={<TelegramIcon />}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
                     {config?.telegram?.configured ? 'Manage Settings' : 'Configure Bot'}
                   </Button>
@@ -422,13 +476,21 @@ const SystemConfiguration = () => {
 
         {/* System Information Section */}
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 600,
+              mb: { xs: 2, sm: 3 },
+              color: 'text.primary',
+              fontSize: { xs: '1.25rem', sm: '1.5rem' }
+            }}
+          >
             System Information
           </Typography>
 
           <Card>
-            <CardContent>
-              <Grid container spacing={4}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
                 <Grid item xs={12} sm={4}>
                   <Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

@@ -58,19 +58,29 @@ const Layout = ({ children }) => {
           boxShadow: '0 16px 36px rgba(153, 27, 27, 0.35)',
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', gap: 3, position: 'relative', zIndex: 1 }}>
-          <Stack direction="row" spacing={2.5} alignItems="center">
+        <Toolbar
+          sx={{
+            justifyContent: 'space-between',
+            gap: { xs: 1, sm: 2, md: 3 },
+            position: 'relative',
+            zIndex: 1,
+            px: { xs: 1, sm: 2 },
+            minHeight: { xs: 56, sm: 64 }
+          }}
+        >
+          <Stack direction="row" spacing={{ xs: 1, sm: 2, md: 2.5 }} alignItems="center">
             <Box
               sx={{
                 position: 'relative',
-                width: 64,
-                height: 64,
-                borderRadius: '18px',
+                width: { xs: 40, sm: 48, md: 64 },
+                height: { xs: 40, sm: 48, md: 64 },
+                borderRadius: { xs: '12px', sm: '15px', md: '18px' },
                 display: 'grid',
                 placeItems: 'center',
                 border: '1px solid rgba(255,255,255,0.4)',
                 backgroundColor: '#ef4444',
                 overflow: 'hidden',
+                flexShrink: 0,
               }}
             >
               <Box
@@ -90,13 +100,15 @@ const Layout = ({ children }) => {
                 fontWeight: 800,
                 letterSpacing: '0.04em',
                 color: '#fff',
+                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.25rem' },
+                display: { xs: 'none', sm: 'block' }
               }}
             >
               PepperQC
             </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack direction="row" spacing={{ xs: 0.5, sm: 1, md: 1.5 }} alignItems="center">
             {navItems.map((item) => {
               const active = location.pathname === item.to;
               return (
@@ -104,24 +116,31 @@ const Layout = ({ children }) => {
                   key={item.to}
                   component={Link}
                   to={item.to}
-                  startIcon={item.icon}
+                  startIcon={<Box sx={{ display: { xs: 'none', sm: 'block' } }}>{item.icon}</Box>}
                   sx={{
                     textTransform: 'none',
                     fontWeight: 500,
                     borderRadius: '999px',
-                    px: 2.5,
-                    py: 1,
+                    px: { xs: 1, sm: 2, md: 2.5 },
+                    py: { xs: 0.5, sm: 0.75, md: 1 },
                     border: navPalette.border,
                     color: active ? navPalette.activeColor : navPalette.inactiveColor,
                     backgroundColor: active ? navPalette.activeBg : navPalette.inactiveBg,
                     transition: 'all 0.2s ease-in-out',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '0.875rem' },
+                    minWidth: { xs: 'auto', sm: 'auto' },
                     '&:hover': {
                       backgroundColor: active ? navPalette.activeBg : navPalette.hoverBg,
                       color: active ? navPalette.activeColor : navPalette.inactiveColor,
                     },
                   }}
                 >
-                  {item.label}
+                  <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                    {item.icon}
+                  </Box>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    {item.label}
+                  </Box>
                 </Button>
               );
             })}
@@ -129,40 +148,67 @@ const Layout = ({ children }) => {
               <IconButton
                 onClick={toggleColorMode}
                 color="inherit"
+                size="medium"
                 sx={{
                   color: '#fff',
                   border: '1px solid rgba(255,255,255,0.28)',
                   backgroundColor: 'rgba(255,255,255,0.12)',
+                  width: { xs: 36, sm: 40, md: 48 },
+                  height: { xs: 36, sm: 40, md: 48 },
                   '&:hover': {
                     backgroundColor: 'rgba(255,255,255,0.2)',
                   },
                 }}
               >
-                {isDark ? <LightModeIcon /> : <DarkModeIcon />}
+                {isDark ?
+                  <LightModeIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }} /> :
+                  <DarkModeIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }} />
+                }
               </IconButton>
             </Tooltip>
           </Stack>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="xl" sx={{ flexGrow: 1, py: { xs: 4, md: 6 }, width: '100%' }}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          flexGrow: 1,
+          py: { xs: 2, sm: 4, md: 6 },
+          px: { xs: 1, sm: 2, md: 3 },
+          width: '100%'
+        }}
+      >
         <Box
           sx={{
             backgroundColor: 'var(--card-bg)',
-            borderRadius: '24px',
+            borderRadius: { xs: '16px', sm: '20px', md: '24px' },
             minHeight: '70vh',
-            p: { xs: 3, md: 6 },
+            p: { xs: 2, sm: 4, md: 6 },
             boxShadow: 'var(--shadow-card)',
             border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148,163,184,0.3)'}`,
             color: 'var(--text-primary)',
           }}
         >
-          <Stack spacing={3}>
+          <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
             <Stack spacing={1.5}>
-              <Typography variant="h4" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                  fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+                }}
+              >
                 Media Intelligence
               </Typography>
-              <Typography variant="body2" sx={{ color: 'var(--text-muted)' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'var(--text-muted)',
+                  fontSize: { xs: '0.875rem', sm: '0.875rem', md: '0.875rem' }
+                }}
+              >
                 Monitor submissions, automate analysis, and accelerate QC workflows.
               </Typography>
             </Stack>
