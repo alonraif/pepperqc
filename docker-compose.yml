@@ -72,6 +72,8 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - backend
+    ports:
+      - "3000:80"  # Re-add direct access on port 3000
 
   # Caddy reverse proxy with automatic HTTPS
   caddy:
