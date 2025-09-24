@@ -9,6 +9,7 @@ import PresetManager from './PresetManager';
 import UploadCard from './UploadCard';
 import Layout from './Layout';
 import TelegramSettings from './TelegramSettings';
+import SystemConfiguration from './SystemConfiguration';
 import './App.css';
 import ColorModeContext from './theme/ColorModeContext';
 
@@ -181,6 +182,8 @@ function App() {
               <Route path="/review/:jobId" element={<ReviewPage />} />
               <Route path="/presets" element={<PresetManager />} />
               <Route path="/telegram" element={<TelegramSettings />} />
+              <Route path="/telegram-settings" element={<TelegramSettings />} />
+              <Route path="/settings" element={<SystemConfiguration />} />
               <Route path="/" element={<DashboardView />} />
             </Routes>
           </Layout>

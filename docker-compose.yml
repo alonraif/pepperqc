@@ -21,19 +21,22 @@ services:
 
   backend:
     build: ./backend
-    ports:
-      - "5000:5000"
     volumes:
       # --- THIS IS THE LIVE RELOAD BIND MOUNT (Step 2) ---
       # It maps your local backend code directly into the container.
       # When you save a .py file, the container sees it instantly.
       - ./backend:/app
       - ./uploads:/app/uploads
+      - caddy_config:/app/caddy
     environment:
       - DATABASE_URL=${DATABASE_URL} # Read from .env
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - PYTHONPATH=/app
+      # SSL/Caddy configuration
+      - CADDYFILE_PATH=/app/caddy/Caddyfile
+      - CADDY_ADMIN_URL=http://caddy:2019
+      - CADDY_STORAGE_PATH=/app/caddy/data
     depends_on:
       - db-init
       - redis
@@ -69,9 +72,27 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - backend
+
+  # Caddy reverse proxy with automatic HTTPS
+  caddy:
+    image: caddy:2-alpine
     ports:
-      - "3000:80"
+      - "80:80"
+      - "443:443"
+      - "2019:2019"  # Admin API
+    volumes:
+      - caddy_config:/data
+      - caddy_logs:/var/log/caddy
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    environment:
+      - CADDY_ADMIN=0.0.0.0:2019
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
 
 volumes:
   uploads:
   postgres_data:
+  caddy_config:
+  caddy_logs:
