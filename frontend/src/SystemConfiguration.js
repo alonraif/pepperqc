@@ -158,11 +158,18 @@ const SystemConfiguration = () => {
   const certStatusInfo = config?.ssl?.certificate_status ? getCertificateStatusInfo(config.ssl.certificate_status) : null;
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-        System Configuration
-      </Typography>
+    <Box sx={{ maxWidth: 1200, margin: '0 auto', p: 3 }}>
+      {/* Page Header */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
+          Settings
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Configure your PepperQC instance, SSL certificates, and notification settings
+        </Typography>
+      </Box>
 
+      {/* Alert Messages */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
@@ -175,50 +182,65 @@ const SystemConfiguration = () => {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        {/* QC Analysis Presets */}
-        <Grid item xs={12}>
-          <Card sx={{ mb: 3 }}>
+      <Stack spacing={4}>
+        {/* Analysis Configuration Section */}
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+            Analysis Configuration
+          </Typography>
+
+          <Card sx={{ mb: 2 }}>
             <CardContent>
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-                <TuneIcon color="primary" />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  QC Analysis Presets
-                </Typography>
-              </Stack>
-
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Configure quality control analysis settings, thresholds, and severity levels for media processing.
-              </Typography>
-
-              <Button
-                variant="outlined"
-                component="a"
-                href="#/presets"
-                startIcon={<TuneIcon />}
-                sx={{ mr: 2 }}
-              >
-                Manage QC Presets
-              </Button>
-
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Set up QCTools tests, FFmpeg detectors, severity thresholds, and analysis parameters.
-              </Typography>
+              <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12} md={8}>
+                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+                    <TuneIcon color="primary" />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      QC Analysis Presets
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Configure quality control tests, thresholds, and severity levels for media analysis
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                  <Button
+                    variant="contained"
+                    component="a"
+                    href="#/presets"
+                    startIcon={<TuneIcon />}
+                    size="large"
+                  >
+                    Manage Presets
+                  </Button>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        {/* SSL/HTTPS Configuration */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: 'fit-content' }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-                <SecurityIcon color="primary" />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  SSL/HTTPS Configuration
-                </Typography>
-                <Tooltip title="Refresh status">
-                  <IconButton size="small" onClick={fetchConfiguration}>
+        {/* Security & Access Section */}
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+            Security & Access
+          </Typography>
+
+          <Card>
+            <CardContent sx={{ p: 4 }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 4 }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <SecurityIcon color="primary" fontSize="large" />
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      SSL/HTTPS Configuration
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Automatic SSL certificates with Let's Encrypt
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Tooltip title="Refresh certificate status">
+                  <IconButton onClick={fetchConfiguration}>
                     <RefreshIcon />
                   </IconButton>
                 </Tooltip>
@@ -230,47 +252,60 @@ const SystemConfiguration = () => {
                     checked={sslEnabled}
                     onChange={(e) => setSslEnabled(e.target.checked)}
                     color="primary"
+                    size="large"
                   />
                 }
-                label="Enable HTTPS with Let's Encrypt"
+                label={
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    Enable HTTPS with automatic SSL certificates
+                  </Typography>
+                }
                 sx={{ mb: 3 }}
               />
 
               {sslEnabled && (
-                <Stack spacing={3}>
-                  <TextField
-                    label="Domain Name"
-                    value={sslForm.hostname}
-                    onChange={(e) => setSslForm({ ...sslForm, hostname: e.target.value })}
-                    placeholder="example.com"
-                    helperText="The domain name for your PepperQC instance"
-                    fullWidth
-                    required
-                  />
-
-                  <TextField
-                    label="Email Address"
-                    type="email"
-                    value={sslForm.email}
-                    onChange={(e) => setSslForm({ ...sslForm, email: e.target.value })}
-                    placeholder="admin@example.com"
-                    helperText="Required for Let's Encrypt certificate notifications"
-                    fullWidth
-                    required
-                  />
+                <Box sx={{ pl: 4, borderLeft: 2, borderColor: 'primary.main', mb: 3 }}>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Domain Name"
+                        value={sslForm.hostname}
+                        onChange={(e) => setSslForm({ ...sslForm, hostname: e.target.value })}
+                        placeholder="pepperqc.example.com"
+                        helperText="Your domain must point to this server"
+                        fullWidth
+                        required
+                        size="large"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Email Address"
+                        type="email"
+                        value={sslForm.email}
+                        onChange={(e) => setSslForm({ ...sslForm, email: e.target.value })}
+                        placeholder="admin@example.com"
+                        helperText="For Let's Encrypt notifications"
+                        fullWidth
+                        required
+                        size="large"
+                      />
+                    </Grid>
+                  </Grid>
 
                   {certStatusInfo && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    <Box sx={{ mt: 3, p: 3, bgcolor: 'background.default', borderRadius: 2 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
                         Certificate Status
                       </Typography>
-                      <Chip
-                        icon={<certStatusInfo.icon />}
-                        label={certStatusInfo.text}
-                        color={certStatusInfo.color}
-                        variant="outlined"
-                        sx={{ mb: 2 }}
-                      />
+                      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+                        <Chip
+                          icon={<certStatusInfo.icon />}
+                          label={certStatusInfo.text}
+                          color={certStatusInfo.color}
+                          size="medium"
+                        />
+                      </Stack>
                       {config?.ssl?.certificate_status?.expires_at && (
                         <Typography variant="body2" color="text.secondary">
                           Expires: {new Date(config.ssl.certificate_status.expires_at).toLocaleDateString()}
@@ -278,12 +313,13 @@ const SystemConfiguration = () => {
                       )}
                     </Box>
                   )}
-                </Stack>
+                </Box>
               )}
 
               <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
                 <Button
                   variant="contained"
+                  size="large"
                   startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
                   onClick={handleSslSave}
                   disabled={saving || (sslEnabled && (!sslForm.hostname || !sslForm.email))}
@@ -294,6 +330,7 @@ const SystemConfiguration = () => {
                 {sslEnabled && config?.ssl?.hostname && (
                   <Button
                     variant="outlined"
+                    size="large"
                     startIcon={saving ? <CircularProgress size={20} /> : <RefreshIcon />}
                     onClick={handleSslRenew}
                     disabled={saving}
@@ -304,125 +341,122 @@ const SystemConfiguration = () => {
               </Stack>
 
               {!sslEnabled && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  PepperQC will be accessible over HTTP only. For production use, enable HTTPS.
+                <Alert severity="info" sx={{ mt: 3 }}>
+                  <strong>HTTP Mode:</strong> Your PepperQC instance will be accessible over HTTP only.
+                  For production environments, we recommend enabling HTTPS.
                 </Alert>
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        {/* Telegram Configuration */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: 'fit-content' }}>
-            <CardContent>
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-                <TelegramIcon color="primary" />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Telegram Notifications
-                </Typography>
-                {config?.telegram?.configured && (
-                  <Chip label="Configured" color="success" size="small" />
-                )}
-              </Stack>
+        {/* Notifications Section */}
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+            Notifications
+          </Typography>
 
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Status
-                  </Typography>
-                  <Typography variant="body1">
-                    {config?.telegram?.configured ? 'Connected' : 'Not configured'}
-                  </Typography>
-                </Box>
-
-                {config?.telegram?.configured && (
-                  <>
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Recipients
-                      </Typography>
-                      <Typography variant="body1">
-                        {config.telegram.recipient_count || 0} configured
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Token Source
-                      </Typography>
-                      <Chip
-                        label={config.telegram.token_source}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </Box>
-
-                    {config.telegram.last_tested_at && (
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">
-                          Last Tested
-                        </Typography>
-                        <Typography variant="body2">
-                          {new Date(config.telegram.last_tested_at).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    )}
-                  </>
-                )}
-
-                <Button
-                  variant="outlined"
-                  component="a"
-                  href="#/telegram-settings"
-                  sx={{ mt: 2 }}
-                >
-                  {config?.telegram?.configured ? 'Manage Telegram Settings' : 'Configure Telegram'}
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* System Information */}
-        <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                System Information
-              </Typography>
+              <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12} md={8}>
+                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                    <TelegramIcon color="primary" fontSize="large" />
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Telegram Bot
+                        {config?.telegram?.configured && (
+                          <Chip label="Active" color="success" size="small" sx={{ ml: 2 }} />
+                        )}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Receive notifications when jobs complete or encounter issues
+                      </Typography>
+                    </Box>
+                  </Stack>
 
-              <Grid container spacing={3}>
+                  {config?.telegram?.configured && (
+                    <Box sx={{ mt: 2 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6} sm={3}>
+                          <Typography variant="body2" color="text.secondary">Recipients</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            {config.telegram.recipient_count || 0}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} sm={3}>
+                          <Typography variant="body2" color="text.secondary">Token Source</Typography>
+                          <Chip
+                            label={config.telegram.token_source}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </Grid>
+                        {config.telegram.last_tested_at && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="body2" color="text.secondary">Last Tested</Typography>
+                            <Typography variant="body2">
+                              {new Date(config.telegram.last_tested_at).toLocaleDateString()}
+                            </Typography>
+                          </Grid>
+                        )}
+                      </Grid>
+                    </Box>
+                  )}
+                </Grid>
+                <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                  <Button
+                    variant={config?.telegram?.configured ? "outlined" : "contained"}
+                    component="a"
+                    href="#/telegram-settings"
+                    size="large"
+                    startIcon={<TelegramIcon />}
+                  >
+                    {config?.telegram?.configured ? 'Manage Settings' : 'Configure Bot'}
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* System Information Section */}
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}>
+            System Information
+          </Typography>
+
+          <Card>
+            <CardContent>
+              <Grid container spacing={4}>
                 <Grid item xs={12} sm={4}>
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Version
                     </Typography>
-                    <Typography variant="body1">
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
                       {config?.system?.version || 'Unknown'}
                     </Typography>
                   </Box>
                 </Grid>
-
                 <Grid item xs={12} sm={4}>
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Environment
                     </Typography>
                     <Chip
                       label={config?.system?.environment || 'production'}
-                      size="small"
                       color={config?.system?.environment === 'development' ? 'warning' : 'default'}
+                      size="medium"
                     />
                   </Box>
                 </Grid>
-
                 <Grid item xs={12} sm={4}>
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Last Updated
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body1">
                       {new Date().toLocaleDateString()}
                     </Typography>
                   </Box>
@@ -430,8 +464,8 @@ const SystemConfiguration = () => {
               </Grid>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Stack>
     </Box>
   );
 };
