@@ -337,6 +337,12 @@ def _build_caddyfile(hostname: str, email: str) -> str:
         base_header_lines.append('  auto_https off')
     base_header_lines.append('}')
 
+    request_body_block = [
+        '  request_body {',
+        '    max_size 100GB',
+        '  }',
+    ]
+
     api_block = [
         '  @api path /api/*',
         '  reverse_proxy @api backend:5000',
@@ -347,7 +353,7 @@ def _build_caddyfile(hostname: str, email: str) -> str:
         site_block = [
             f'{hostname} {{',
             '  encode zstd gzip',
-        ] + api_block + [
+        ] + request_body_block + api_block + [
             '  log {',
             '    output file /var/log/caddy/access.log',
             '  }',
@@ -361,7 +367,7 @@ def _build_caddyfile(hostname: str, email: str) -> str:
         site_block = [
             ':80 {',
             '  encode zstd gzip',
-        ] + api_block + ['}']
+        ] + request_body_block + api_block + ['}']
 
     lines = base_header_lines + [''] + site_block
     return '\n'.join(lines) + '\n'

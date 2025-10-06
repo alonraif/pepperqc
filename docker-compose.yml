@@ -45,7 +45,8 @@ services:
     restart: unless-stopped
     # --- THIS IS THE LIVE RELOAD COMMAND (Step 2) ---
     # Gunicorn's --reload flag watches for file changes.
-    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--reload", "main:app"]
+    # --timeout 3600 allows up to 1 hour for large file uploads
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--reload", "--timeout", "3600", "main:app"]
 
   worker:
     build: ./backend
